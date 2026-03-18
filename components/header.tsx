@@ -27,11 +27,11 @@ interface HeaderProps {
 }
 
 export function Header({ currentSceneTitle }: HeaderProps) {
-  const { t, locale, setLocale } = useI18n();
+  const { t } = useI18n();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [languageOpen, setLanguageOpen] = useState(false);
+  
   const [themeOpen, setThemeOpen] = useState(false);
 
   // Model setup state
@@ -53,15 +53,12 @@ export function Header({ currentSceneTitle }: HeaderProps) {
     failedOutlines.length === 0 &&
     Object.values(mediaTasks).every((task) => task.status === 'done' || task.status === 'failed');
 
-  const languageRef = useRef<HTMLDivElement>(null);
+  
   const themeRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   const handleClickOutside = useCallback(
     (e: MouseEvent) => {
-      if (languageOpen && languageRef.current && !languageRef.current.contains(e.target as Node)) {
-        setLanguageOpen(false);
-      }
       if (themeOpen && themeRef.current && !themeRef.current.contains(e.target as Node)) {
         setThemeOpen(false);
       }
@@ -69,15 +66,15 @@ export function Header({ currentSceneTitle }: HeaderProps) {
         setExportMenuOpen(false);
       }
     },
-    [languageOpen, themeOpen, exportMenuOpen],
+    [themeOpen, exportMenuOpen],
   );
 
   useEffect(() => {
-    if (languageOpen || themeOpen || exportMenuOpen) {
+    if (themeOpen || exportMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [languageOpen, themeOpen, exportMenuOpen, handleClickOutside]);
+  }, [themeOpen, exportMenuOpen, handleClickOutside]);
 
   return (
     <>
@@ -104,58 +101,12 @@ export function Header({ currentSceneTitle }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-4 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md px-2 py-1.5 rounded-full border border-gray-100/50 dark:border-gray-700/50 shadow-sm shrink-0">
-          {/* Language Selector */}
-          <div className="relative" ref={languageRef}>
-            <button
-              onClick={() => {
-                setLanguageOpen(!languageOpen);
-                setThemeOpen(false);
-              }}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all"
-            >
-              {locale === 'zh-CN' ? 'CN' : 'EN'}
-            </button>
-            {languageOpen && (
-              <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden z-50 min-w-[120px]">
-                <button
-                  onClick={() => {
-                    setLocale('zh-CN');
-                    setLanguageOpen(false);
-                  }}
-                  className={cn(
-                    'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors',
-                    locale === 'zh-CN' &&
-                      'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                  )}
-                >
-                  简体中文
-                </button>
-                <button
-                  onClick={() => {
-                    setLocale('en-US');
-                    setLanguageOpen(false);
-                  }}
-                  className={cn(
-                    'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors',
-                    locale === 'en-US' &&
-                      'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                  )}
-                >
-                  English
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
-
           {/* Theme Selector */}
           <div className="relative" ref={themeRef}>
             <button
               onClick={() => {
                 setThemeOpen(!themeOpen);
-                setLanguageOpen(false);
-              }}
+                }}
               className="p-2 rounded-full text-gray-400 dark:text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all group"
             >
               {theme === 'light' && <Sun className="w-4 h-4" />}

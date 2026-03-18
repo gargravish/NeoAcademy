@@ -222,6 +222,23 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
           },
         },
       },
+      {
+        id: 'qwen3.5:latest',
+        name: 'Qwen3.5 (Ollama Local)',
+        contextWindow: 131072,
+        outputWindow: 32768,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: false,
+          thinking: {
+            toggleable: true,
+            budgetAdjustable: false,
+            defaultEnabled: true,
+          },
+        },
+      },
+
     ],
   },
 
