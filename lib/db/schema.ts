@@ -121,9 +121,11 @@ export const knowledgeDoc = sqliteTable('knowledge_doc', {
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   filename: text('filename').notNull(),
-  fileType: text('file_type').notNull(), // 'pdf' | 'txt' | 'md' | 'url' | 'image'
+  fileType: text('file_type').notNull(), // 'pdf' | 'txt' | 'md' | 'url' | 'image' | 'video'
   chunkCount: integer('chunk_count').notNull().default(0),
   sizeBytes: integer('size_bytes').notNull().default(0),
+  tags: text('tags').default(''), // comma-separated lowercase tags, e.g. "biology,gcse,science"
+  isGlobal: integer('is_global', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),

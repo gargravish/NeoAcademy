@@ -89,18 +89,45 @@ export async function insertChunks(chunks: ChunkRecord[]): Promise<void> {
   log.info(`Inserted ${rows.length} chunks for docId=${chunks[0].docId}`);
 }
 
+export interface SearchChunksOptions {
+  limit?: number;
+  userId?: string;
+  /** When true, also include chunks from global (admin-shared) documents */
+  includeGlobal?: boolean;
+  /** Filter to chunks whose metadata.tags overlap with these tags */
+  tags?: string[];
+}
+
+type SearchResult = { id: string; text: string; docId: string; score: number; metadata: Record<string, unknown> };
+
 /** Semantic search — returns top-k chunks most relevant to query */
 export async function searchChunks(
   queryVector: number[],
-  opts: { limit?: number; userId?: string } = {},
-): Promise<{ id: string; text: string; docId: string; score: number; metadata: Record<string, unknown> }[]> {
+  opts: SearchChunksOptions = {},
+): Promise<SearchResult[]> {
   const table = await getTable();
   const { limit = 5 } = opts;
 
-  let query = table.vectorSearch(new Float32Array(queryVector)).limit(limit).select(['id', 'text', 'docId', 'metadata']);
+  let query = table.vectorSearch(new Float32Array(queryVector)).limit(limit).select(['id', 'text', 'docId', 'metadata', 'userId']);
 
-  if (opts.userId) {
-    query = query.where(`userId = "${opts.userId}"`);
+  // Build WHERE clause
+  const conditions: string[] = [];
+
+  if (opts.userId && opts.includeGlobal) {
+    // User's own docs OR global docs (isGlobal stored in metadata)
+    conditions.push(`(userId = "${opts.userId}" OR metadata LIKE '%"isGlobal":true%')`);
+  } else if (opts.userId) {
+    conditions.push(`userId = "${opts.userId}"`);
+  }
+
+  if (opts.tags && opts.tags.length > 0) {
+    // Match any chunk whose metadata contains at least one of the requested tags
+    const tagConditions = opts.tags.map((t) => `metadata LIKE '%"${t}"%'`);
+    conditions.push(`(${tagConditions.join(' OR ')})`);
+  }
+
+  if (conditions.length > 0) {
+    query = query.where(conditions.join(' AND '));
   }
 
   const results = await query.toArray();

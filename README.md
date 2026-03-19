@@ -25,7 +25,7 @@ Built for a student who wants to learn anything, anywhere, with zero recurring s
 
 - **One-shot pre-generation** — All course content (text + audio narration) is generated once and saved to disk. Runtime has zero AI latency.
 - **Local-first** — All playback, chat, and quiz grading runs on your local Ollama server. No cloud dependency at runtime.
-- **Multimodal knowledge base** — Upload PDFs, notes, images, or videos. Gemini vision describes visual content; everything is stored in a local LanceDB vector store and used to enrich generated courses.
+- **Multimodal knowledge base** — Upload PDFs, notes, images, or videos. Gemini vision describes visual content; everything is stored in a local LanceDB vector store and used to enrich generated courses. Tag documents by subject for automatic retrieval during generation.
 - **Cost-optimised** — Multi-key Gemini free-tier rotation. Fallback chain: Gemini free → SiliconFlow → Gemini paid (£5 cap) → OpenAI (optional).
 - **Fully managed** — Admin portal for API keys, user accounts, usage tracking, and health monitoring.
 
@@ -104,8 +104,9 @@ sequenceDiagram
     Note over User,Disk: ── PHASE 1: Pre-Generation (minutes, cloud APIs) ──
 
     User->>NeoAcademy: Generate course: "Photosynthesis (GCSE)"
-    NeoAcademy->>KnowledgeBase: Semantic search for relevant chunks
-    KnowledgeBase-->>NeoAcademy: Top-5 context chunks
+    NeoAcademy->>NeoAcademy: Auto-match tags from topic (biology, gcse, photosynthesis)
+    NeoAcademy->>KnowledgeBase: Tag-filtered + broad semantic search
+    KnowledgeBase-->>NeoAcademy: Merged top-K context chunks (tag-boosted)
     NeoAcademy->>WebSearch: Search latest info (Tavily/Brave/DDG)
     WebSearch-->>NeoAcademy: 5 web results
     NeoAcademy->>Gemini: Generate 8 scene outlines (+ context)
@@ -130,7 +131,7 @@ sequenceDiagram
 
 ---
 
-## Knowledge Base — Multimodal RAG
+## Knowledge Base — Multimodal RAG with Tags
 
 ```mermaid
 flowchart LR
@@ -146,16 +147,20 @@ flowchart LR
         VISION["Gemini Vision\nDescribes images\n& video frames"]
         EMBED["Gemini embedding-001\n768-dim vectors\n(free tier)"]
         FALLBACK["Ollama all-minilm\nLocal fallback"]
+        TAGS["Tags + Global flag\nstored in metadata"]
     end
 
     subgraph Storage["💾 Storage"]
         LANCE["LanceDB\nLocal vector store\ndata/lancedb/"]
-        SQLITE["SQLite\nDocument metadata\nChunk counts"]
+        SQLITE["SQLite\nDocument metadata\nTags · isGlobal"]
     end
 
-    subgraph Retrieval["🔍 Retrieval at Generation Time"]
-        QUERY["Course topic\n(query)"]
-        SEARCH["Semantic search\nTop-K chunks"]
+    subgraph Retrieval["🔍 Tag-Aware Retrieval"]
+        TOPIC["Course topic"]
+        MATCH["Auto-match tags\nfrom topic keywords"]
+        SEARCH1["Pass 1: Tag-filtered\nsemantic search"]
+        SEARCH2["Pass 2: Broad\nsemantic search"]
+        MERGE["Merge + deduplicate\n+ score boost"]
         CONTEXT["RAG context\ninjected into\ngeneration prompt"]
     end
 
@@ -164,17 +169,34 @@ flowchart LR
     IMG --> VISION --> CHUNK
     VID -->|"Extract keyframes\n(ffmpeg)"| VISION
 
-    CHUNK --> EMBED
+    CHUNK --> TAGS
+    TAGS --> EMBED
     EMBED -->|"Rate limited"| FALLBACK
     EMBED --> LANCE
     FALLBACK --> LANCE
     LANCE --> SQLITE
 
-    QUERY --> EMBED
-    EMBED --> SEARCH
-    SEARCH --> LANCE
-    LANCE --> CONTEXT
+    TOPIC --> MATCH
+    MATCH --> SEARCH1
+    TOPIC --> SEARCH2
+    SEARCH1 --> LANCE
+    SEARCH2 --> LANCE
+    SEARCH1 --> MERGE
+    SEARCH2 --> MERGE
+    MERGE --> CONTEXT
 ```
+
+### Tagging System
+
+Documents can be tagged with subject labels (e.g. `biology`, `gcse`, `photosynthesis`) and optionally marked as **Global** (visible to all users).
+
+| Feature | Description |
+|---------|-------------|
+| **Tags** | Comma-separated lowercase labels. Applied at upload time. Used to filter vector search during course generation. |
+| **Global flag** | Admin-only. Marks a document as shared — all students benefit from it during generation without re-uploading. |
+| **Auto-matching** | When generating a course, the engine queries all known tags from the database and matches them against the topic. Matched tags trigger a priority tag-filtered vector search. |
+| **Two-pass retrieval** | Pass 1: tag-filtered semantic search (score-boosted). Pass 2: broad semantic search. Results are merged and deduplicated. |
+| **Admin pre-population** | Admins can upload textbooks, syllabi, and reference material with subject tags from `/admin/knowledge-base`. These become globally available for all course generation. |
 
 ---
 
@@ -361,7 +383,7 @@ Access at `/admin` — requires admin role.
 | **API Providers** | Manage Gemini keys (rotation pool + paid key), SiliconFlow, OpenAI, Ollama, TTS/ASR URLs, web search keys |
 | **Users** | Create learner/admin accounts, change roles |
 | **Courses** | View all generated courses, delete with cleanup |
-| **Knowledge Base** | View all uploaded documents across all users |
+| **Knowledge Base** | Upload, tag, and manage documents. Mark as global for all users. Filter by tag. |
 | **Usage & Billing** | Per-provider daily request and cost breakdown |
 
 ---
@@ -380,6 +402,8 @@ Upload any of these to enrich course generation with your own materials:
 | **Video** | `.mp4` `.mov` `.webm` | Keyframes extracted (ffmpeg) → Gemini vision describes each frame → embedded |
 
 All content is stored locally in LanceDB. Retrieved chunks are injected into course generation prompts as RAG context.
+
+**Students** can upload and tag their own documents from `/knowledge`. **Admins** manage all documents, apply tags, and mark resources as global from `/admin/knowledge-base`.
 
 ---
 

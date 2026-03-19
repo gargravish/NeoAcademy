@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Database, FileText, Globe, Image, Loader2, Plus, Trash2, Upload, Video } from 'lucide-react';
+import { Database, FileText, Globe, Image, Loader2, Plus, Tag, Trash2, Upload, Video, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDropzone } from 'react-dropzone';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,8 @@ interface KnowledgeDoc {
   fileType: string;
   chunkCount: number;
   sizeBytes: number;
+  tags: string | null;
+  isGlobal: boolean;
   createdAt: number;
 }
 
@@ -26,16 +28,98 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function parseTags(raw: string | null): string[] {
+  if (!raw) return [];
+  return raw.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+}
+
+function TagInput({
+  tags,
+  onChange,
+  suggestions,
+  placeholder = 'Add tags (e.g. biology, gcse)…',
+}: {
+  tags: string[];
+  onChange: (tags: string[]) => void;
+  suggestions: string[];
+  placeholder?: string;
+}) {
+  const [input, setInput] = useState('');
+
+  function addTag(tag: string) {
+    const clean = tag.trim().toLowerCase();
+    if (clean && !tags.includes(clean)) {
+      onChange([...tags, clean]);
+    }
+    setInput('');
+  }
+
+  function removeTag(tag: string) {
+    onChange(tags.filter((t) => t !== tag));
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if ((e.key === 'Enter' || e.key === ',') && input.trim()) {
+      e.preventDefault();
+      addTag(input);
+    }
+    if (e.key === 'Backspace' && !input && tags.length > 0) {
+      removeTag(tags[tags.length - 1]);
+    }
+  }
+
+  const unusedSuggestions = suggestions.filter((s) => !tags.includes(s));
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-input bg-transparent px-3 py-2 min-h-[40px]">
+        {tags.map((tag) => (
+          <Badge key={tag} variant="secondary" className="gap-1 text-xs">
+            {tag}
+            <button onClick={() => removeTag(tag)} className="ml-0.5 hover:text-destructive">
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        ))}
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={() => { if (input.trim()) addTag(input); }}
+          placeholder={tags.length === 0 ? placeholder : ''}
+          className="flex-1 min-w-[120px] bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
+        />
+      </div>
+      {unusedSuggestions.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {unusedSuggestions.slice(0, 10).map((s) => (
+            <button
+              key={s}
+              onClick={() => addTag(s)}
+              className="rounded-full border border-dashed border-muted-foreground/30 px-2 py-0.5 text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+            >
+              + {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function KnowledgePage() {
   const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [urlInput, setUrlInput] = useState('');
+  const [uploadTags, setUploadTags] = useState<string[]>([]);
 
   async function loadDocs() {
     const res = await fetch('/api/knowledge');
     const data = await res.json();
     setDocs(data.docs || []);
+    setAllTags(data.allTags || []);
     setLoading(false);
   }
 
@@ -44,6 +128,7 @@ export default function KnowledgePage() {
   async function uploadFile(file: File) {
     const form = new FormData();
     form.append('file', file);
+    if (uploadTags.length > 0) form.append('tags', uploadTags.join(','));
     setUploading(true);
     try {
       const res = await fetch('/api/knowledge', { method: 'POST', body: form });
@@ -66,6 +151,7 @@ export default function KnowledgePage() {
     if (!urlInput.trim()) return;
     const form = new FormData();
     form.append('url', urlInput.trim());
+    if (uploadTags.length > 0) form.append('tags', uploadTags.join(','));
     setUploading(true);
     try {
       const res = await fetch('/api/knowledge', { method: 'POST', body: form });
@@ -93,11 +179,9 @@ export default function KnowledgePage() {
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      for (const file of acceptedFiles) {
-        uploadFile(file);
-      }
+      for (const file of acceptedFiles) uploadFile(file);
     },
-    [],
+    [uploadTags],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -120,6 +204,12 @@ export default function KnowledgePage() {
 
   const totalChunks = docs.reduce((s, d) => s + d.chunkCount, 0);
   const totalSize = docs.reduce((s, d) => s + d.sizeBytes, 0);
+
+  const fileTypeIcon = (ft: string) => {
+    if (ft === 'image') return <Image className="h-4 w-4 shrink-0 text-blue-500" />;
+    if (ft === 'video') return <Video className="h-4 w-4 shrink-0 text-purple-500" />;
+    return <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -165,11 +255,16 @@ export default function KnowledgePage() {
                   ? 'Drop files here'
                   : uploading
                     ? 'Processing… (images/videos may take a minute)'
-                    : 'Drop PDF, TXT, MD, images (JPG/PNG/WebP/GIF) or videos (MP4/MOV/WebM)'}
+                    : 'Drop PDF, TXT, MD, images or videos'}
               </p>
-              <p className="text-xs text-muted-foreground/70">
-                Images and videos are described by Gemini vision and stored as searchable text
-              </p>
+            </div>
+
+            {/* Tags for this upload */}
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1">
+                <Tag className="h-3 w-3" /> Tags (applied to all uploads above)
+              </Label>
+              <TagInput tags={uploadTags} onChange={setUploadTags} suggestions={allTags} />
             </div>
 
             {/* URL input */}
@@ -203,39 +298,44 @@ export default function KnowledgePage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {docs.map((doc) => (
-              <Card key={doc.id}>
-                <CardContent className="flex items-center justify-between py-3">
-                  <div className="flex items-center gap-3">
-                    {doc.fileType === 'image' ? (
-                      <Image className="h-4 w-4 shrink-0 text-blue-500" />
-                    ) : doc.fileType === 'video' ? (
-                      <Video className="h-4 w-4 shrink-0 text-purple-500" />
-                    ) : (
-                      <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium line-clamp-1">{doc.filename}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {doc.chunkCount} chunks · {formatBytes(doc.sizeBytes)}
-                      </p>
+            {docs.map((doc) => {
+              const docTags = parseTags(doc.tags);
+              return (
+                <Card key={doc.id}>
+                  <CardContent className="flex items-center justify-between py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {fileTypeIcon(doc.fileType)}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium line-clamp-1">{doc.filename}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-xs text-muted-foreground">
+                            {doc.chunkCount} chunks · {formatBytes(doc.sizeBytes)}
+                          </p>
+                          {doc.isGlobal && (
+                            <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-600">
+                              Global
+                            </Badge>
+                          )}
+                          {docTags.map((tag) => (
+                            <Badge key={tag} variant="secondary" className="text-[10px]">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs uppercase">
-                      {doc.fileType}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteDoc(doc.id, doc.filename)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant="outline" className="text-xs uppercase">
+                        {doc.fileType}
+                      </Badge>
+                      <Button variant="ghost" size="sm" onClick={() => deleteDoc(doc.id, doc.filename)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

@@ -17,9 +17,22 @@ export async function POST(req: NextRequest) {
   const urlInput = formData.get('url') as string | null;
   const context = (formData.get('context') as string | null) ?? undefined;
 
+  // Parse tags (comma-separated string)
+  const rawTags = (formData.get('tags') as string | null) ?? '';
+  const tags = rawTags
+    .split(',')
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+
+  // Only admins can mark documents as global
+  const isGlobalRaw = formData.get('isGlobal') as string | null;
+  const isGlobal = isGlobalRaw === 'true' && user.role === 'admin';
+
   if (!file && !urlInput) {
     return NextResponse.json({ error: 'Provide a file or URL' }, { status: 400 });
   }
+
+  const ingestMeta = { tags: tags.length > 0 ? tags : undefined, isGlobal: isGlobal || undefined };
 
   try {
     if (file) {
@@ -29,13 +42,13 @@ export async function POST(req: NextRequest) {
 
       if (fileType === 'image') {
         const buffer = Buffer.from(await file.arrayBuffer());
-        const result = await ingestDocument({ userId: user.id, filename, fileType: 'image', buffer, mimeType, context });
+        const result = await ingestDocument({ userId: user.id, filename, fileType: 'image', buffer, mimeType, context, ...ingestMeta });
         return NextResponse.json(result);
       }
 
       if (fileType === 'video') {
         const buffer = Buffer.from(await file.arrayBuffer());
-        const result = await ingestDocument({ userId: user.id, filename, fileType: 'video', buffer, mimeType, context });
+        const result = await ingestDocument({ userId: user.id, filename, fileType: 'video', buffer, mimeType, context, ...ingestMeta });
         return NextResponse.json(result);
       }
 
@@ -44,13 +57,13 @@ export async function POST(req: NextRequest) {
         const arrayBuffer = await file.arrayBuffer();
         const extracted = await extractText(new Uint8Array(arrayBuffer));
         const content = Array.isArray(extracted.text) ? extracted.text.join('\n') : (extracted.text as string);
-        const result = await ingestDocument({ userId: user.id, filename, fileType: 'pdf', content });
+        const result = await ingestDocument({ userId: user.id, filename, fileType: 'pdf', content, ...ingestMeta });
         return NextResponse.json(result);
       }
 
       // TXT / MD
       const content = await file.text();
-      const result = await ingestDocument({ userId: user.id, filename, fileType, content });
+      const result = await ingestDocument({ userId: user.id, filename, fileType, content, ...ingestMeta });
       return NextResponse.json(result);
     }
 
@@ -65,6 +78,7 @@ export async function POST(req: NextRequest) {
         filename: urlInput,
         fileType: 'url',
         content,
+        ...ingestMeta,
       });
       return NextResponse.json(result);
     }
@@ -79,7 +93,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   let user;
   try {
     user = await requireUser();
@@ -89,13 +103,28 @@ export async function GET() {
 
   const { db } = await import('@/lib/db');
   const { knowledgeDoc } = await import('@/lib/db/schema');
-  const { eq, desc } = await import('drizzle-orm');
+  const { eq, desc, or } = await import('drizzle-orm');
 
-  const docs = await db
-    .select()
-    .from(knowledgeDoc)
-    .where(eq(knowledgeDoc.userId, user.id))
-    .orderBy(desc(knowledgeDoc.createdAt));
+  const showAll = req.nextUrl.searchParams.get('all') === 'true' && user.role === 'admin';
 
-  return NextResponse.json({ docs });
+  const docs = showAll
+    ? await db.select().from(knowledgeDoc).orderBy(desc(knowledgeDoc.createdAt))
+    : await db
+        .select()
+        .from(knowledgeDoc)
+        .where(or(eq(knowledgeDoc.userId, user.id), eq(knowledgeDoc.isGlobal, true)))
+        .orderBy(desc(knowledgeDoc.createdAt));
+
+  // Also return all distinct tags for autocomplete
+  const tagSet = new Set<string>();
+  for (const doc of docs) {
+    if (doc.tags) {
+      for (const t of doc.tags.split(',')) {
+        const tag = t.trim().toLowerCase();
+        if (tag) tagSet.add(tag);
+      }
+    }
+  }
+
+  return NextResponse.json({ docs, allTags: [...tagSet].sort() });
 }

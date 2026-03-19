@@ -109,11 +109,20 @@ export async function preGenerateCourse(
       status: 'generating',
     });
 
-    // 2. RAG context retrieval
+    // 2. RAG context retrieval (tag-aware)
     progress('retrieving_context', 5, 'Searching knowledge base…');
     let ragContext = '';
     if (input.useKnowledgeBase !== false) {
-      const chunks = await retrieveContext(input.topic, { userId: input.userId, topK: 8 });
+      const matchedTags = await matchTopicToTags(input.topic);
+      if (matchedTags.length > 0) {
+        log.info(`Auto-matched tags from topic: ${matchedTags.join(', ')}`);
+      }
+      const chunks = await retrieveContext(input.topic, {
+        userId: input.userId,
+        topK: 8,
+        tags: matchedTags.length > 0 ? matchedTags : undefined,
+        includeGlobal: true,
+      });
       ragContext = formatContextForPrompt(chunks);
     }
 
@@ -389,6 +398,51 @@ async function renderTTSAudio(
 
     done++;
     onProgress?.(done, scenes.length);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tag matching — extract likely tags from topic by matching against known tags
+// ---------------------------------------------------------------------------
+
+async function matchTopicToTags(topic: string): Promise<string[]> {
+  try {
+    const { db } = await import('@/lib/db');
+    const { knowledgeDoc } = await import('@/lib/db/schema');
+
+    const rows = await db
+      .selectDistinct({ tags: knowledgeDoc.tags })
+      .from(knowledgeDoc);
+
+    // Collect all unique tags from the database
+    const allTags = new Set<string>();
+    for (const row of rows) {
+      if (row.tags) {
+        for (const t of row.tags.split(',')) {
+          const tag = t.trim().toLowerCase();
+          if (tag) allTags.add(tag);
+        }
+      }
+    }
+
+    if (allTags.size === 0) return [];
+
+    // Match topic words/phrases against available tags
+    const topicLower = topic.toLowerCase();
+    const topicWords = topicLower.split(/[\s,.\-—:;()[\]]+/).filter((w) => w.length >= 2);
+
+    const matched: string[] = [];
+    for (const tag of allTags) {
+      // Direct substring match: tag appears in topic, or a topic word matches the tag
+      if (topicLower.includes(tag) || topicWords.some((w) => tag.includes(w) || w.includes(tag))) {
+        matched.push(tag);
+      }
+    }
+
+    return matched;
+  } catch (err) {
+    log.warn('Failed to match topic to tags:', err);
+    return [];
   }
 }
 

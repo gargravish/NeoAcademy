@@ -39,6 +39,10 @@ export interface IngestOptions {
   mimeType?: string;
   /** Optional topic context to improve vision descriptions */
   context?: string;
+  /** Subject tags for filtering during retrieval (lowercase, e.g. ["biology", "gcse"]) */
+  tags?: string[];
+  /** If true, chunks are available to all users (admin-uploaded shared resources) */
+  isGlobal?: boolean;
 }
 
 export interface IngestResult {
@@ -88,6 +92,7 @@ async function ingestText(opts: IngestOptions): Promise<IngestResult> {
     log.info(`  → Embedded batch ${Math.ceil((i + 1) / BATCH_SIZE)}/${Math.ceil(chunks.length / BATCH_SIZE)}`);
   }
 
+  const tags = opts.tags ?? [];
   await insertChunks(
     chunks.map((chunk, i) => ({
       id: `${docId}_${chunk.index}`,
@@ -99,12 +104,14 @@ async function ingestText(opts: IngestOptions): Promise<IngestResult> {
         filename: opts.filename,
         fileType: opts.fileType,
         chunkIndex: chunk.index,
+        ...(tags.length > 0 && { tags }),
+        ...(opts.isGlobal && { isGlobal: true }),
       },
     })),
   );
 
   const sizeBytes = Buffer.byteLength(content, 'utf-8');
-  await saveKnowledgeDoc({ id: docId, userId: opts.userId, filename: opts.filename, fileType: opts.fileType, chunkCount: chunks.length, sizeBytes });
+  await saveKnowledgeDoc({ id: docId, userId: opts.userId, filename: opts.filename, fileType: opts.fileType, chunkCount: chunks.length, sizeBytes, tags, isGlobal: opts.isGlobal });
 
   log.info(`Text ingestion complete: docId=${docId}, ${chunks.length} chunks`);
   return { docId, chunkCount: chunks.length, sizeBytes, fileType: opts.fileType };
@@ -127,6 +134,7 @@ async function ingestImage(opts: IngestOptions): Promise<IngestResult> {
   const docId = nanoid();
   const vectors = await embedTexts(chunks.map((c) => c.text));
 
+  const tags = opts.tags ?? [];
   await insertChunks(
     chunks.map((chunk, i) => ({
       id: `${docId}_${chunk.index}`,
@@ -140,12 +148,14 @@ async function ingestImage(opts: IngestOptions): Promise<IngestResult> {
         chunkIndex: chunk.index,
         isMedia: true,
         mediaType: 'image',
+        ...(tags.length > 0 && { tags }),
+        ...(opts.isGlobal && { isGlobal: true }),
       },
     })),
   );
 
   const sizeBytes = opts.buffer.length;
-  await saveKnowledgeDoc({ id: docId, userId: opts.userId, filename: opts.filename, fileType: 'image', chunkCount: chunks.length, sizeBytes });
+  await saveKnowledgeDoc({ id: docId, userId: opts.userId, filename: opts.filename, fileType: 'image', chunkCount: chunks.length, sizeBytes, tags, isGlobal: opts.isGlobal });
 
   log.info(`Image ingestion complete: docId=${docId}`);
   return { docId, chunkCount: chunks.length, sizeBytes, fileType: 'image' };
@@ -171,6 +181,7 @@ async function ingestVideo(opts: IngestOptions): Promise<IngestResult> {
   const texts = mediaChunks.map((c) => c.text);
   const vectors = await embedTexts(texts);
 
+  const tags = opts.tags ?? [];
   await insertChunks(
     mediaChunks.map((chunk, i) => ({
       id: `${docId}_frame_${i}`,
@@ -187,12 +198,14 @@ async function ingestVideo(opts: IngestOptions): Promise<IngestResult> {
         timestamp: chunk.timestamp,
         frameIndex: chunk.frameIndex,
         mediaRef: chunk.mediaRef,
+        ...(tags.length > 0 && { tags }),
+        ...(opts.isGlobal && { isGlobal: true }),
       },
     })),
   );
 
   const sizeBytes = opts.buffer.length;
-  await saveKnowledgeDoc({ id: docId, userId: opts.userId, filename: opts.filename, fileType: 'video', chunkCount: mediaChunks.length, sizeBytes });
+  await saveKnowledgeDoc({ id: docId, userId: opts.userId, filename: opts.filename, fileType: 'video', chunkCount: mediaChunks.length, sizeBytes, tags, isGlobal: opts.isGlobal });
 
   log.info(`Video ingestion complete: docId=${docId}, ${mediaChunks.length} frame chunks`);
   return { docId, chunkCount: mediaChunks.length, sizeBytes, fileType: 'video' };
@@ -209,6 +222,8 @@ async function saveKnowledgeDoc(data: {
   fileType: string;
   chunkCount: number;
   sizeBytes: number;
+  tags?: string[];
+  isGlobal?: boolean;
 }) {
   const { db } = await import('@/lib/db');
   const { knowledgeDoc } = await import('@/lib/db/schema');
@@ -220,6 +235,8 @@ async function saveKnowledgeDoc(data: {
     fileType: data.fileType,
     chunkCount: data.chunkCount,
     sizeBytes: data.sizeBytes,
+    tags: (data.tags ?? []).join(','),
+    isGlobal: data.isGlobal ?? false,
   });
 }
 
