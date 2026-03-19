@@ -133,7 +133,7 @@ export default function SetupPage() {
   }
 
   function handleFinish() {
-    router.push('/login');
+    router.push('/login?callbackUrl=/admin');
   }
 
   return (
@@ -338,12 +338,12 @@ export default function SetupPage() {
               <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
               <CardTitle className="mt-2">NeoAcademy is ready!</CardTitle>
               <CardDescription>
-                Sign in with your admin account to start generating lessons
+                Sign in with your admin account to access the admin portal
               </CardDescription>
             </CardHeader>
             <CardFooter>
               <Button className="w-full" onClick={handleFinish}>
-                Go to sign in
+                Go to admin portal
               </Button>
             </CardFooter>
           </Card>
