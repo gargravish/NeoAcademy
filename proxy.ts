@@ -3,7 +3,7 @@ import { getSessionCookie } from 'better-auth/cookies';
 
 const PUBLIC_ROUTES = ['/login', '/setup', '/api/auth', '/api/setup'];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow static assets
