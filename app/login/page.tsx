@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from '@/lib/auth/client';
+import { signIn, getSession } from '@/lib/auth/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +26,6 @@ function LoginForm() {
     const { error } = await signIn.email({
       email,
       password,
-      callbackURL: callbackUrl,
     });
 
     if (error) {
@@ -35,7 +34,12 @@ function LoginForm() {
       return;
     }
 
-    router.push(callbackUrl);
+    // Determine destination based on role
+    const session = await getSession();
+    const role = (session?.data?.user as { role?: string } | undefined)?.role;
+    const destination = role === 'admin' ? '/admin' : callbackUrl;
+
+    router.push(destination);
     router.refresh();
   }
 
