@@ -6,6 +6,11 @@ const PUBLIC_ROUTES = ['/login', '/setup', '/api/auth', '/api/setup'];
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Forward pathname so server components (e.g. FirstRunRedirect) can read it
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-pathname', pathname);
+  const next = () => NextResponse.next({ request: { headers: requestHeaders } });
+
   // Allow static assets
   if (
     pathname.startsWith('/_next') ||
@@ -13,12 +18,12 @@ export async function proxy(request: NextRequest) {
     pathname === '/favicon.ico' ||
     pathname === '/apple-icon.png'
   ) {
-    return NextResponse.next();
+    return next();
   }
 
   // Allow public routes
   if (PUBLIC_ROUTES.some((r) => pathname.startsWith(r))) {
-    return NextResponse.next();
+    return next();
   }
 
   // Check for session cookie (fast, no DB hit)
@@ -30,7 +35,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  return next();
 }
 
 export const config = {
