@@ -265,9 +265,18 @@ On first launch (`/setup`), a 4-step wizard guides you through:
 1. **Create admin account** — Set your name, email, and password (this becomes your login)
 2. **Configure API providers** — Enter Gemini free-tier keys, confirm local server addresses
 3. **Connectivity test** — Verifies Ollama, Kokoro TTS, and Whisper ASR are reachable
-4. **Done** — Redirected to sign in
+4. **Done** — Redirected to sign in → admin portal
 
 > There is **no default password**. You choose your password in step 1.
+
+### Role-Based Routing
+
+After sign-in, users are automatically redirected based on their role:
+
+| Role | Landing page |
+|------|-------------|
+| **Admin** | `/admin` — Admin portal |
+| **Student** | `/` — Student homepage |
 
 ---
 
@@ -328,7 +337,7 @@ NeoAcademy/
 │   ├── first-run-redirect.tsx    # Auto-redirect to /setup
 │   └── ...                       # UI components
 │
-├── middleware.ts                 # Auth middleware (protects all routes)
+├── proxy.ts                     # Auth proxy (protects all routes, Next.js 16)
 ├── instrumentation.ts            # DB auto-migration on startup
 ├── drizzle.config.ts             # Drizzle Kit config
 └── data/                         # Runtime data (gitignored)
@@ -397,38 +406,70 @@ All content is stored locally in LanceDB. Retrieved chunks are injected into cou
 
 ## Deployment on Proxmox/LXC
 
+### Manual Deploy
+
 ```bash
-# On your NeoAcademy server
+cd /opt/neoacademy
 git pull
 pnpm install
 pnpm build
-pnpm start
+systemctl restart neoacademy
 ```
 
-To run as a systemd service:
+### systemd Service
+
+Create `/etc/systemd/system/neoacademy.service`:
 
 ```ini
-# /etc/systemd/system/neoacademy.service
 [Unit]
-Description=NeoAcademy
+Description=NeoAcademy - AI Learning Platform
 After=network.target
 
 [Service]
 Type=simple
-User=root
 WorkingDirectory=/opt/neoacademy
-ExecStart=/usr/bin/node .next/standalone/server.js
-Restart=on-failure
+ExecStart=/usr/bin/npx next start -H 0.0.0.0 -p 3000
+Restart=always
+RestartSec=5
 Environment=NODE_ENV=production
 Environment=PORT=3000
+Environment=NODE_OPTIONS=--max-old-space-size=1536
+EnvironmentFile=/opt/neoacademy/.env.local
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/neoacademy/data /opt/neoacademy/.next
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=neoacademy
 
 [Install]
 WantedBy=multi-user.target
 ```
 
+Enable and start:
+
 ```bash
+systemctl daemon-reload
 systemctl enable --now neoacademy
 ```
+
+### Useful Commands
+
+| Command | Description |
+|---------|-------------|
+| `systemctl start neoacademy` | Start the app |
+| `systemctl stop neoacademy` | Stop the app |
+| `systemctl restart neoacademy` | Restart after deploy |
+| `systemctl status neoacademy` | Check status |
+| `journalctl -u neoacademy -f` | Tail live logs |
+| `journalctl -u neoacademy --since "5 min ago"` | Recent logs |
+
+### Server Requirements
+
+- **Minimum RAM**: 2 GB (+ 4 GB swap recommended for builds)
+- **Node.js**: ≥ 20 with `npx` available
+- **Build tools**: `python3`, `make`, `g++` (for `better-sqlite3` native addon)
+- Swap setup: `fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile`
 
 ---
 
