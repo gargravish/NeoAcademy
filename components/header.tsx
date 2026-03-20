@@ -31,7 +31,7 @@ export function Header({ currentSceneTitle }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  
+
   const [themeOpen, setThemeOpen] = useState(false);
 
   // Model setup state
@@ -53,7 +53,6 @@ export function Header({ currentSceneTitle }: HeaderProps) {
     failedOutlines.length === 0 &&
     Object.values(mediaTasks).every((task) => task.status === 'done' || task.status === 'failed');
 
-  
   const themeRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -106,7 +105,7 @@ export function Header({ currentSceneTitle }: HeaderProps) {
             <button
               onClick={() => {
                 setThemeOpen(!themeOpen);
-                }}
+              }}
               className="p-2 rounded-full text-gray-400 dark:text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all group"
             >
               {theme === 'light' && <Sun className="w-4 h-4" />}

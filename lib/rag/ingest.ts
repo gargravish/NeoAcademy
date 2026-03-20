@@ -94,7 +94,9 @@ async function ingestText(opts: IngestOptions): Promise<IngestResult> {
     const batch = chunks.slice(i, i + BATCH_SIZE);
     const vectors = await embedTexts(batch.map((c) => c.text));
     allVectors.push(...vectors);
-    log.info(`  → Embedded batch ${Math.ceil((i + 1) / BATCH_SIZE)}/${Math.ceil(chunks.length / BATCH_SIZE)}`);
+    log.info(
+      `  → Embedded batch ${Math.ceil((i + 1) / BATCH_SIZE)}/${Math.ceil(chunks.length / BATCH_SIZE)}`,
+    );
   }
 
   const tags = opts.tags ?? [];
@@ -116,7 +118,16 @@ async function ingestText(opts: IngestOptions): Promise<IngestResult> {
   );
 
   const sizeBytes = Buffer.byteLength(content, 'utf-8');
-  await saveKnowledgeDoc({ id: docId, userId: opts.userId, filename: opts.filename, fileType: opts.fileType, chunkCount: chunks.length, sizeBytes, tags, isGlobal: opts.isGlobal });
+  await saveKnowledgeDoc({
+    id: docId,
+    userId: opts.userId,
+    filename: opts.filename,
+    fileType: opts.fileType,
+    chunkCount: chunks.length,
+    sizeBytes,
+    tags,
+    isGlobal: opts.isGlobal,
+  });
 
   log.info(`Text ingestion complete: docId=${docId}, ${chunks.length} chunks`);
   return { docId, chunkCount: chunks.length, sizeBytes, fileType: opts.fileType };
@@ -135,7 +146,9 @@ async function ingestPdf(opts: IngestOptions): Promise<IngestResult> {
 
   const MAX_PDF_IMAGE_DESCRIPTIONS = Number(process.env.MAX_PDF_IMAGE_DESCRIPTIONS ?? 8);
 
-  log.info(`  → Parsing PDF text + images (up to ${MAX_PDF_IMAGE_DESCRIPTIONS} images will be described)`);
+  log.info(
+    `  → Parsing PDF text + images (up to ${MAX_PDF_IMAGE_DESCRIPTIONS} images will be described)`,
+  );
 
   let parsed: Awaited<ReturnType<typeof import('@/lib/pdf/pdf-providers').parsePDF>>;
   try {
@@ -148,7 +161,10 @@ async function ingestPdf(opts: IngestOptions): Promise<IngestResult> {
     const { getDocumentProxy, extractText } = await import('unpdf');
     const pdf = await getDocumentProxy(new Uint8Array(opts.buffer));
     const { text } = await extractText(pdf, { mergePages: true });
-    return ingestText({ ...opts, content: Array.isArray(text) ? text.join('\n') : (text as string) });
+    return ingestText({
+      ...opts,
+      content: Array.isArray(text) ? text.join('\n') : (text as string),
+    });
   }
 
   const pdfText = parsed.text ?? '';
@@ -228,7 +244,9 @@ async function ingestPdf(opts: IngestOptions): Promise<IngestResult> {
     const batch = allTexts.slice(i, i + BATCH_SIZE);
     const vectors = await embedTexts(batch);
     allVectors.push(...vectors);
-    log.info(`  → Embedded batch ${Math.ceil((i + 1) / BATCH_SIZE)}/${Math.ceil(allTexts.length / BATCH_SIZE)}`);
+    log.info(
+      `  → Embedded batch ${Math.ceil((i + 1) / BATCH_SIZE)}/${Math.ceil(allTexts.length / BATCH_SIZE)}`,
+    );
   }
 
   await insertChunks(
@@ -296,7 +314,16 @@ async function ingestImage(opts: IngestOptions): Promise<IngestResult> {
   );
 
   const sizeBytes = opts.buffer.length;
-  await saveKnowledgeDoc({ id: docId, userId: opts.userId, filename: opts.filename, fileType: 'image', chunkCount: chunks.length, sizeBytes, tags, isGlobal: opts.isGlobal });
+  await saveKnowledgeDoc({
+    id: docId,
+    userId: opts.userId,
+    filename: opts.filename,
+    fileType: 'image',
+    chunkCount: chunks.length,
+    sizeBytes,
+    tags,
+    isGlobal: opts.isGlobal,
+  });
 
   log.info(`Image ingestion complete: docId=${docId}`);
   return { docId, chunkCount: chunks.length, sizeBytes, fileType: 'image' };
@@ -346,7 +373,16 @@ async function ingestVideo(opts: IngestOptions): Promise<IngestResult> {
   );
 
   const sizeBytes = opts.buffer.length;
-  await saveKnowledgeDoc({ id: docId, userId: opts.userId, filename: opts.filename, fileType: 'video', chunkCount: mediaChunks.length, sizeBytes, tags, isGlobal: opts.isGlobal });
+  await saveKnowledgeDoc({
+    id: docId,
+    userId: opts.userId,
+    filename: opts.filename,
+    fileType: 'video',
+    chunkCount: mediaChunks.length,
+    sizeBytes,
+    tags,
+    isGlobal: opts.isGlobal,
+  });
 
   log.info(`Video ingestion complete: docId=${docId}, ${mediaChunks.length} frame chunks`);
   return { docId, chunkCount: mediaChunks.length, sizeBytes, fileType: 'video' };

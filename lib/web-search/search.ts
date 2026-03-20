@@ -20,10 +20,7 @@ export interface SearchOptions {
 }
 
 /** Search using the best available provider */
-export async function webSearch(
-  query: string,
-  opts: SearchOptions = {},
-): Promise<SearchResult[]> {
+export async function webSearch(query: string, opts: SearchOptions = {}): Promise<SearchResult[]> {
   const { maxResults = 5 } = opts;
   const { getWebSearchConfig } = await import('@/lib/db/config');
   const config = await getWebSearchConfig();
@@ -66,7 +63,11 @@ export async function webSearch(
   return [];
 }
 
-async function tavilySearch(query: string, apiKey: string, maxResults: number): Promise<SearchResult[]> {
+async function tavilySearch(
+  query: string,
+  apiKey: string,
+  maxResults: number,
+): Promise<SearchResult[]> {
   const res = await fetch('https://api.tavily.com/search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -81,7 +82,7 @@ async function tavilySearch(query: string, apiKey: string, maxResults: number): 
   });
 
   if (!res.ok) throw new Error(`Tavily HTTP ${res.status}`);
-  const data = await res.json() as {
+  const data = (await res.json()) as {
     results: { title: string; url: string; content: string; score: number }[];
   };
 
@@ -93,14 +94,18 @@ async function tavilySearch(query: string, apiKey: string, maxResults: number): 
   }));
 }
 
-async function braveSearch(query: string, apiKey: string, maxResults: number): Promise<SearchResult[]> {
+async function braveSearch(
+  query: string,
+  apiKey: string,
+  maxResults: number,
+): Promise<SearchResult[]> {
   const url = new URL('https://api.search.brave.com/res/v1/web/search');
   url.searchParams.set('q', query);
   url.searchParams.set('count', String(maxResults));
 
   const res = await fetch(url, {
     headers: {
-      'Accept': 'application/json',
+      Accept: 'application/json',
       'Accept-Encoding': 'gzip',
       'X-Subscription-Token': apiKey,
     },
@@ -108,7 +113,7 @@ async function braveSearch(query: string, apiKey: string, maxResults: number): P
   });
 
   if (!res.ok) throw new Error(`Brave HTTP ${res.status}`);
-  const data = await res.json() as {
+  const data = (await res.json()) as {
     web?: { results?: { title: string; url: string; description: string }[] };
   };
 
@@ -130,7 +135,7 @@ async function duckduckgoSearch(query: string, maxResults: number): Promise<Sear
   const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
   if (!res.ok) throw new Error(`DuckDuckGo HTTP ${res.status}`);
 
-  const data = await res.json() as {
+  const data = (await res.json()) as {
     AbstractText?: string;
     AbstractURL?: string;
     AbstractSource?: string;

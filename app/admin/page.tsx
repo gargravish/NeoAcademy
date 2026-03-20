@@ -7,13 +7,20 @@ import { BookOpen, Database, FolderOpen, Users } from 'lucide-react';
 
 async function getStats() {
   const [userCount] = await db.select({ count: count() }).from(user);
-  const [courseCount] = await db.select({ count: count() }).from(course).where(eq(course.status, 'ready'));
+  const [courseCount] = await db
+    .select({ count: count() })
+    .from(course)
+    .where(eq(course.status, 'ready'));
   const [docCount] = await db.select({ count: count() }).from(knowledgeDoc);
 
   // Today's API usage
   const today = new Date().toISOString().slice(0, 10);
   const todayUsage = await db
-    .select({ provider: providerUsage.provider, requests: sum(providerUsage.requests), cost: sum(providerUsage.costUsd) })
+    .select({
+      provider: providerUsage.provider,
+      requests: sum(providerUsage.requests),
+      cost: sum(providerUsage.costUsd),
+    })
     .from(providerUsage)
     .where(eq(providerUsage.date, today))
     .groupBy(providerUsage.provider);
@@ -72,7 +79,7 @@ export default async function AdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's API Cost</CardTitle>
+            <CardTitle className="text-sm font-medium">Today&apos;s API Cost</CardTitle>
             <FolderOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -89,7 +96,7 @@ export default async function AdminDashboard() {
       {stats.todayUsage.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Today's API Usage</CardTitle>
+            <CardTitle className="text-base">Today&apos;s API Usage</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

@@ -111,7 +111,9 @@ export default function CoursePage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold">{scene.title}</h2>
-              <Badge variant="outline" className="mt-1 text-xs capitalize">{scene.type}</Badge>
+              <Badge variant="outline" className="mt-1 text-xs capitalize">
+                {scene.type}
+              </Badge>
             </div>
             {scene.audioPath && (
               <Button
@@ -121,9 +123,11 @@ export default function CoursePage() {
                 disabled={audioPlaying}
                 className="shrink-0"
               >
-                {audioPlaying
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <Volume2 className="h-4 w-4" />}
+                {audioPlaying ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Volume2 className="h-4 w-4" />
+                )}
                 {audioPlaying ? 'Playing…' : 'Play audio'}
               </Button>
             )}
@@ -191,7 +195,8 @@ function SceneRenderer({ scene }: { scene: Scene }) {
   const content = scene.content;
 
   if (scene.type === 'slides') {
-    const slides = (content.slides as { heading: string; bullets?: string[]; example?: string }[]) || [];
+    const slides =
+      (content.slides as { heading: string; bullets?: string[]; example?: string }[]) || [];
     return (
       <div className="space-y-4">
         {slides.map((slide, i) => (
@@ -250,10 +255,13 @@ function SceneRenderer({ scene }: { scene: Scene }) {
         {outcomes.length > 0 && (
           <Card className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/20">
             <CardContent className="py-3 space-y-1">
-              <p className="text-xs font-medium text-green-700 dark:text-green-400">Learning outcomes:</p>
+              <p className="text-xs font-medium text-green-700 dark:text-green-400">
+                Learning outcomes:
+              </p>
               {outcomes.map((o, i) => (
                 <p key={i} className="text-sm flex gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />{o}
+                  <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                  {o}
                 </p>
               ))}
             </CardContent>
@@ -304,7 +312,10 @@ function QuizRenderer({ questions }: { questions: QuizQuestion[] }) {
                     !isSubmitted && 'hover:bg-accent',
                     isSelected && !isSubmitted && 'border-primary bg-primary/5',
                     isSubmitted && isCorrect && 'border-green-500 bg-green-50 dark:bg-green-950/30',
-                    isSubmitted && isSelected && !isCorrect && 'border-destructive bg-destructive/5',
+                    isSubmitted &&
+                      isSelected &&
+                      !isCorrect &&
+                      'border-destructive bg-destructive/5',
                   )}
                   onClick={() => !isSubmitted && setAnswers({ ...answers, [i]: j })}
                 >

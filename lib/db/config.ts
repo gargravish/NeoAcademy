@@ -89,7 +89,7 @@ export const DEFAULTS = {
   siliconflow: (): SiliconFlowConfig => ({
     apiKey: process.env.SILICONFLOW_API_KEY || '',
     baseUrl: process.env.SILICONFLOW_BASE_URL || 'https://api.siliconflow.cn/v1',
-    enabled: !!(process.env.SILICONFLOW_API_KEY),
+    enabled: !!process.env.SILICONFLOW_API_KEY,
   }),
   openai: (): OpenAIConfig => ({
     apiKey: process.env.OPENAI_API_KEY_DIRECT || '',
@@ -110,8 +110,11 @@ export const DEFAULTS = {
     apiKey: process.env.ASR_OPENAI_API_KEY || 'whisper',
   }),
   webSearch: (): WebSearchConfig => ({
-    tavily: { apiKey: process.env.TAVILY_API_KEY || '', enabled: !!(process.env.TAVILY_API_KEY) },
-    brave: { apiKey: process.env.BRAVE_SEARCH_API_KEY || '', enabled: !!(process.env.BRAVE_SEARCH_API_KEY) },
+    tavily: { apiKey: process.env.TAVILY_API_KEY || '', enabled: !!process.env.TAVILY_API_KEY },
+    brave: {
+      apiKey: process.env.BRAVE_SEARCH_API_KEY || '',
+      enabled: !!process.env.BRAVE_SEARCH_API_KEY,
+    },
     duckduckgo: { enabled: true },
   }),
   generation: (): GenerationConfig => ({

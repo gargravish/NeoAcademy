@@ -98,7 +98,13 @@ export interface SearchChunksOptions {
   tags?: string[];
 }
 
-type SearchResult = { id: string; text: string; docId: string; score: number; metadata: Record<string, unknown> };
+type SearchResult = {
+  id: string;
+  text: string;
+  docId: string;
+  score: number;
+  metadata: Record<string, unknown>;
+};
 
 /** Semantic search — returns top-k chunks most relevant to query */
 export async function searchChunks(
@@ -108,7 +114,10 @@ export async function searchChunks(
   const table = await getTable();
   const { limit = 5 } = opts;
 
-  let query = table.vectorSearch(new Float32Array(queryVector)).limit(limit).select(['id', 'text', 'docId', 'metadata', 'userId']);
+  let query = table
+    .vectorSearch(new Float32Array(queryVector))
+    .limit(limit)
+    .select(['id', 'text', 'docId', 'metadata', 'userId']);
 
   // Build WHERE clause
   const conditions: string[] = [];

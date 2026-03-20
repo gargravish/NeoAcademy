@@ -69,7 +69,7 @@ async function geminiEmbed(texts: string[], apiKey: string): Promise<number[][]>
     if (res.status === 429) throw new Error('RATE_LIMIT');
     if (!res.ok) throw new Error(`Gemini embedding failed: ${res.status}`);
 
-    const data = await res.json() as { embeddings: { values: number[] }[] };
+    const data = (await res.json()) as { embeddings: { values: number[] }[] };
     results.push(...data.embeddings.map((e) => e.values));
   }
 
@@ -96,7 +96,7 @@ async function ollamaEmbed(texts: string[]): Promise<number[][]> {
       continue;
     }
 
-    const data = await res.json() as { embedding: number[] };
+    const data = (await res.json()) as { embedding: number[] };
     results.push(data.embedding);
   }
 
@@ -104,5 +104,7 @@ async function ollamaEmbed(texts: string[]): Promise<number[][]> {
 }
 
 function isRateLimitError(err: unknown): boolean {
-  return err instanceof Error && (err.message.includes('429') || err.message.includes('RATE_LIMIT'));
+  return (
+    err instanceof Error && (err.message.includes('429') || err.message.includes('RATE_LIMIT'))
+  );
 }

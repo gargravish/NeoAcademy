@@ -91,7 +91,12 @@ export async function preGenerateCourse(
   const packageDir = path.join(process.cwd(), 'data', 'courses', courseId);
   fs.mkdirSync(packageDir, { recursive: true });
 
-  const progress = (step: PreGenerationStep, pct: number, msg: string, extra: Partial<PreGenerationProgress> = {}) => {
+  const progress = (
+    step: PreGenerationStep,
+    pct: number,
+    msg: string,
+    extra: Partial<PreGenerationProgress> = {},
+  ) => {
     onProgress?.({ step, progress: pct, message: msg, ...extra });
     log.info(`[${step}] ${pct}% — ${msg}`);
   };
@@ -177,11 +182,16 @@ export async function preGenerateCourse(
           });
           scenes[sceneIdx] = scene;
           completed++;
-          progress('generating_scenes', 20 + Math.round((completed / outlines.length) * 60), `Scene ${completed}/${outlines.length}: ${scene.title}`, {
-            scenesComplete: completed,
-            totalScenes: outlines.length,
-            courseId,
-          });
+          progress(
+            'generating_scenes',
+            20 + Math.round((completed / outlines.length) * 60),
+            `Scene ${completed}/${outlines.length}: ${scene.title}`,
+            {
+              scenesComplete: completed,
+              totalScenes: outlines.length,
+              courseId,
+            },
+          );
         }),
       );
     }
@@ -189,7 +199,11 @@ export async function preGenerateCourse(
     // 6. Pre-render TTS audio
     progress('rendering_audio', 80, 'Pre-rendering audio narration…');
     await renderTTSAudio(scenes, packageDir, (done, total) => {
-      progress('rendering_audio', 80 + Math.round((done / total) * 15), `Audio ${done}/${total} scenes`);
+      progress(
+        'rendering_audio',
+        80 + Math.round((done / total) * 15),
+        `Audio ${done}/${total} scenes`,
+      );
     });
 
     // 7. Save course package
@@ -410,9 +424,7 @@ async function matchTopicToTags(topic: string): Promise<string[]> {
     const { db } = await import('@/lib/db');
     const { knowledgeDoc } = await import('@/lib/db/schema');
 
-    const rows = await db
-      .selectDistinct({ tags: knowledgeDoc.tags })
-      .from(knowledgeDoc);
+    const rows = await db.selectDistinct({ tags: knowledgeDoc.tags }).from(knowledgeDoc);
 
     // Collect all unique tags from the database
     const allTags = new Set<string>();

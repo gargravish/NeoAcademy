@@ -54,7 +54,9 @@ export default function UsersPage() {
     setLoading(false);
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   async function changeRole(userId: string, role: string) {
     const res = await fetch('/api/admin/users', {
@@ -77,12 +79,19 @@ export default function UsersPage() {
       const res = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: addName, email: addEmail, password: addPassword, role: addRole }),
+        body: JSON.stringify({
+          name: addName,
+          email: addEmail,
+          password: addPassword,
+          role: addRole,
+        }),
       });
       if (!res.ok) throw new Error();
       toast.success('User created');
       setAddOpen(false);
-      setAddName(''); setAddEmail(''); setAddPassword('');
+      setAddName('');
+      setAddEmail('');
+      setAddPassword('');
       await load();
     } catch {
       toast.error('Failed to create user');
@@ -92,7 +101,12 @@ export default function UsersPage() {
   }
 
   async function deleteUser(userId: string) {
-    if (!confirm('Delete this user permanently? This will remove their sessions and account credentials.')) return;
+    if (
+      !confirm(
+        'Delete this user permanently? This will remove their sessions and account credentials.',
+      )
+    )
+      return;
     const res = await fetch('/api/admin/users', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -149,7 +163,9 @@ export default function UsersPage() {
         </div>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add user</Button>
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-1" /> Add user
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -162,16 +178,29 @@ export default function UsersPage() {
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
-                <Input type="email" value={addEmail} onChange={(e) => setAddEmail(e.target.value)} required />
+                <Input
+                  type="email"
+                  value={addEmail}
+                  onChange={(e) => setAddEmail(e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label>Password</Label>
-                <Input type="password" value={addPassword} onChange={(e) => setAddPassword(e.target.value)} required minLength={8} />
+                <Input
+                  type="password"
+                  value={addPassword}
+                  onChange={(e) => setAddPassword(e.target.value)}
+                  required
+                  minLength={8}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Role</Label>
                 <Select value={addRole} onValueChange={setAddRole}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="learner">Learner</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
@@ -205,11 +234,20 @@ export default function UsersPage() {
               />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" disabled={resetting} onClick={() => setResetOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={resetting}
+                onClick={() => setResetOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={resetting}>
-                {resetting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <KeyRound className="h-4 w-4 mr-2" />}
+                {resetting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <KeyRound className="h-4 w-4 mr-2" />
+                )}
                 Reset password
               </Button>
             </DialogFooter>
@@ -239,9 +277,7 @@ export default function UsersPage() {
                   <p className="text-xs text-muted-foreground">{u.email}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>
-                    {u.role}
-                  </Badge>
+                  <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>{u.role}</Badge>
                   <Select value={u.role} onValueChange={(role) => changeRole(u.id, role)}>
                     <SelectTrigger className="h-7 w-7 p-0 border-0 bg-transparent">
                       <UserCog className="h-4 w-4 text-muted-foreground" />

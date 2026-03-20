@@ -18,11 +18,7 @@ export async function DELETE(
 
   const { docId } = await params;
 
-  const [doc] = await db
-    .select()
-    .from(knowledgeDoc)
-    .where(eq(knowledgeDoc.id, docId))
-    .limit(1);
+  const [doc] = await db.select().from(knowledgeDoc).where(eq(knowledgeDoc.id, docId)).limit(1);
 
   if (!doc) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 

@@ -25,11 +25,11 @@ const log = createLogger('MediaProcessor');
 export type MediaType = 'image' | 'video';
 
 export interface MediaChunk {
-  text: string;         // Rich text description of the visual content
-  mediaRef: string;     // Relative path to the original media file (for display)
+  text: string; // Rich text description of the visual content
+  mediaRef: string; // Relative path to the original media file (for display)
   mediaType: MediaType;
-  timestamp?: number;   // For video: seconds from start
-  frameIndex?: number;  // For video: frame number
+  timestamp?: number; // For video: seconds from start
+  frameIndex?: number; // For video: frame number
 }
 
 // ---------------------------------------------------------------------------
@@ -37,16 +37,31 @@ export interface MediaChunk {
 // ---------------------------------------------------------------------------
 
 export const SUPPORTED_IMAGE_TYPES = new Set([
-  'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
 ]);
 
 export const SUPPORTED_VIDEO_TYPES = new Set([
-  'video/mp4', 'video/quicktime', 'video/webm', 'video/mpeg',
+  'video/mp4',
+  'video/quicktime',
+  'video/webm',
+  'video/mpeg',
 ]);
 
 export const SUPPORTED_MEDIA_EXTENSIONS = new Set([
-  'jpg', 'jpeg', 'png', 'gif', 'webp',      // images
-  'mp4', 'mov', 'webm', 'mpeg', 'm4v',      // videos
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp', // images
+  'mp4',
+  'mov',
+  'webm',
+  'mpeg',
+  'm4v', // videos
 ]);
 
 export function isImageMime(mime: string): boolean {
@@ -59,8 +74,10 @@ export function isVideoMime(mime: string): boolean {
 
 export function getMediaType(mimeOrExt: string): MediaType | null {
   const lower = mimeOrExt.toLowerCase();
-  if (lower.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(lower)) return 'image';
-  if (lower.startsWith('video/') || ['mp4', 'mov', 'webm', 'mpeg', 'm4v'].includes(lower)) return 'video';
+  if (lower.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(lower))
+    return 'image';
+  if (lower.startsWith('video/') || ['mp4', 'mov', 'webm', 'mpeg', 'm4v'].includes(lower))
+    return 'video';
   return null;
 }
 
@@ -77,8 +94,8 @@ export async function describeImage(
   mimeType: string,
   context?: string,
 ): Promise<string> {
-  const { pickKey, markRateLimited, recordUsage } = await import('./embeddings').then(() =>
-    import('@/lib/ai/gemini-key-pool'),
+  const { pickKey, markRateLimited, recordUsage } = await import('./embeddings').then(
+    () => import('@/lib/ai/gemini-key-pool'),
   );
 
   const keyData = await pickKey();
@@ -94,10 +111,7 @@ export async function describeImage(
   const body = {
     contents: [
       {
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: mimeType, data: base64 } },
-        ],
+        parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } }],
       },
     ],
     generationConfig: { maxOutputTokens: 1024, temperature: 0.2 },
@@ -122,7 +136,7 @@ export async function describeImage(
     throw new Error(`Gemini vision error: ${res.status}`);
   }
 
-  const data = await res.json() as {
+  const data = (await res.json()) as {
     candidates?: { content?: { parts?: { text?: string }[] } }[];
     usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
   };
@@ -226,13 +240,17 @@ async function extractVideoFrames(videoPath: string, filename: string): Promise<
 
     try {
       // Extract a frame every N seconds, capped at MAX_VIDEO_FRAMES
-      const interval = Math.max(VIDEO_FRAME_INTERVAL_SECONDS, Math.ceil(duration / MAX_VIDEO_FRAMES));
+      const interval = Math.max(
+        VIDEO_FRAME_INTERVAL_SECONDS,
+        Math.ceil(duration / MAX_VIDEO_FRAMES),
+      );
       await execAsync(
         `ffmpeg -i "${videoPath}" -vf "fps=1/${interval}" -q:v 2 "${frameDir}/frame_%04d.jpg"`,
         { timeout: 60000 },
       );
 
-      const frameFiles = fs.readdirSync(frameDir)
+      const frameFiles = fs
+        .readdirSync(frameDir)
         .filter((f) => f.endsWith('.jpg'))
         .sort();
 
@@ -269,6 +287,8 @@ async function describeVideoByMetadata(filename: string, context?: string): Prom
   );
 
   if (!res.ok) return `Video file: ${filename}`;
-  const data = await res.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+  const data = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  };
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? `Video file: ${filename}`;
 }

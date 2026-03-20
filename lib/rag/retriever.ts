@@ -91,9 +91,7 @@ export async function retrieveContext(
   log.info(`RAG total: ${allResults.size} unique chunks above threshold`);
 
   // Sort by score descending and take topK
-  return [...allResults.values()]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, topK);
+  return [...allResults.values()].sort((a, b) => b.score - a.score).slice(0, topK);
 }
 
 /**
@@ -102,9 +100,7 @@ export async function retrieveContext(
 export function formatContextForPrompt(context: RetrievedContext[]): string {
   if (context.length === 0) return '';
 
-  const sections = context
-    .map((c, i) => `[Source ${i + 1}: ${c.source}]\n${c.text}`)
-    .join('\n\n');
+  const sections = context.map((c, i) => `[Source ${i + 1}: ${c.source}]\n${c.text}`).join('\n\n');
 
   return `--- Relevant context from knowledge base ---\n${sections}\n--- End of context ---`;
 }

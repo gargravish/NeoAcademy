@@ -37,7 +37,13 @@ export async function GET() {
   }
 
   const users = await db
-    .select({ id: user.id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt })
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+    })
     .from(user)
     .orderBy(user.createdAt);
 

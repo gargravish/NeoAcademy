@@ -33,7 +33,11 @@ export function DeleteCourseButton({
 
   return (
     <Button variant="ghost" size="sm" onClick={handleDelete} disabled={deleting}>
-      {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive" />}
+      {deleting ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Trash2 className="h-4 w-4 text-destructive" />
+      )}
     </Button>
   );
 }

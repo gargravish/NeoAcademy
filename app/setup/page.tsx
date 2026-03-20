@@ -145,9 +145,7 @@ export default function SetupPage() {
             <BookOpen className="h-6 w-6" />
           </div>
           <h1 className="text-2xl font-bold">Welcome to NeoAcademy</h1>
-          <p className="text-sm text-muted-foreground">
-            First-run setup — takes about 2 minutes
-          </p>
+          <p className="text-sm text-muted-foreground">First-run setup — takes about 2 minutes</p>
         </div>
 
         {/* Step indicators */}
@@ -168,7 +166,9 @@ export default function SetupPage() {
                 <User className="h-5 w-5 text-primary" />
                 <CardTitle>Create admin account</CardTitle>
               </div>
-              <CardDescription>This will be your admin login for managing NeoAcademy</CardDescription>
+              <CardDescription>
+                This will be your admin login for managing NeoAcademy
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreateAccount} className="space-y-4" id="account-form">

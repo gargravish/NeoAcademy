@@ -5,7 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +21,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { BookOpen, ChevronRight, Loader2, Plus, Upload } from 'lucide-react';
@@ -58,7 +71,9 @@ export default function CoursesPage() {
     setLoadingCourses(false);
   }
 
-  useEffect(() => { loadCourses(); }, []);
+  useEffect(() => {
+    loadCourses();
+  }, []);
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
@@ -72,7 +87,14 @@ export default function CoursesPage() {
       const res = await fetch('/api/generate-course', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, level, numScenes: parseInt(numScenes), useKnowledgeBase: useKnowledge, useWebSearch, highQuality }),
+        body: JSON.stringify({
+          topic,
+          level,
+          numScenes: parseInt(numScenes),
+          useKnowledgeBase: useKnowledge,
+          useWebSearch,
+          highQuality,
+        }),
         signal: abort.signal,
       });
 
@@ -136,7 +158,12 @@ export default function CoursesPage() {
             <Button variant="outline" size="sm" onClick={() => router.push('/knowledge')}>
               <Upload className="h-4 w-4 mr-1" /> Knowledge Base
             </Button>
-            <Dialog open={genOpen} onOpenChange={(o) => { if (!generating) setGenOpen(o); }}>
+            <Dialog
+              open={genOpen}
+              onOpenChange={(o) => {
+                if (!generating) setGenOpen(o);
+              }}
+            >
               <DialogTrigger asChild>
                 <Button size="sm">
                   <Plus className="h-4 w-4 mr-1" /> Generate Course
@@ -165,7 +192,9 @@ export default function CoursesPage() {
                       <div className="space-y-2">
                         <Label>Level</Label>
                         <Select value={level} onValueChange={setLevel}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="GCSE">GCSE</SelectItem>
                             <SelectItem value="A-Level">A-Level</SelectItem>
@@ -177,10 +206,14 @@ export default function CoursesPage() {
                       <div className="space-y-2">
                         <Label>Scenes</Label>
                         <Select value={numScenes} onValueChange={setNumScenes}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
                           <SelectContent>
                             {[4, 6, 8, 10, 12].map((n) => (
-                              <SelectItem key={n} value={String(n)}>{n} scenes</SelectItem>
+                              <SelectItem key={n} value={String(n)}>
+                                {n} scenes
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -198,12 +231,16 @@ export default function CoursesPage() {
                       <div className="flex items-center justify-between">
                         <Label className="text-sm">
                           High quality{' '}
-                          <span className="text-muted-foreground text-xs">(slower, uses Gemini Flash)</span>
+                          <span className="text-muted-foreground text-xs">
+                            (slower, uses Gemini Flash)
+                          </span>
                         </Label>
                         <Switch checked={highQuality} onCheckedChange={setHighQuality} />
                       </div>
                     </div>
-                    <Button type="submit" className="w-full">Generate course</Button>
+                    <Button type="submit" className="w-full">
+                      Generate course
+                    </Button>
                   </form>
                 ) : (
                   <div className="space-y-4 pt-2">
@@ -269,15 +306,19 @@ export default function CoursesPage() {
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="text-sm leading-snug">{c.title}</CardTitle>
                     <Badge
-                      variant={c.status === 'ready' ? 'default' : c.status === 'failed' ? 'destructive' : 'secondary'}
+                      variant={
+                        c.status === 'ready'
+                          ? 'default'
+                          : c.status === 'failed'
+                            ? 'destructive'
+                            : 'secondary'
+                      }
                       className="shrink-0 text-xs"
                     >
                       {c.status}
                     </Badge>
                   </div>
-                  {c.level && (
-                    <CardDescription className="text-xs">{c.level}</CardDescription>
-                  )}
+                  {c.level && <CardDescription className="text-xs">{c.level}</CardDescription>}
                 </CardHeader>
                 <CardContent className="pb-2">
                   <p className="text-xs text-muted-foreground">{c.sceneCount} scenes</p>

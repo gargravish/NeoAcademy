@@ -4,8 +4,7 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as schema from './schema';
 
-const DB_PATH =
-  process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'neoacademy.db');
+const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'neoacademy.db');
 
 // Ensure the data directory exists
 const dbDir = path.dirname(DB_PATH);

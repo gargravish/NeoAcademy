@@ -18,7 +18,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (password.length < 8) {
-      return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Password must be at least 8 characters' },
+        { status: 400 },
+      );
     }
 
     // Create account via Better Auth (handles hashing etc.)
@@ -34,9 +37,7 @@ export async function POST(req: NextRequest) {
     await db
       .update(user)
       .set({ role: 'admin' })
-      .where(
-        (await import('drizzle-orm')).eq(user.id, result.user.id),
-      );
+      .where((await import('drizzle-orm')).eq(user.id, result.user.id));
 
     return NextResponse.json({ success: true, userId: result.user.id });
   } catch (err) {

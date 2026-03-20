@@ -357,8 +357,6 @@ export function GenerationToolbar({
         </Tooltip>
       )}
 
-
-
       {/* ── Separator ── */}
       <div className="w-px h-4 bg-border/60 mx-1" />
 

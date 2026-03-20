@@ -118,7 +118,10 @@ export default function ProvidersPage() {
       onClick={() => {
         if (provider === 'gemini')
           save('gemini', {
-            freeKeys: geminiKeys.split(',').map((k) => k.trim()).filter(Boolean),
+            freeKeys: geminiKeys
+              .split(',')
+              .map((k) => k.trim())
+              .filter(Boolean),
             paidKey: geminiPaidKey,
             paidMonthlyCapGbp: parseFloat(geminiCap),
             enabled: true,
@@ -127,15 +130,17 @@ export default function ProvidersPage() {
             embeddingModel: 'gemini-embedding-001',
           });
         else if (provider === 'siliconflow')
-          save('siliconflow', { apiKey: sfKey, baseUrl: 'https://api.siliconflow.cn/v1', enabled: sfEnabled });
-        else if (provider === 'openai')
-          save('openai', { apiKey: oaiKey, enabled: oaiEnabled });
+          save('siliconflow', {
+            apiKey: sfKey,
+            baseUrl: 'https://api.siliconflow.cn/v1',
+            enabled: sfEnabled,
+          });
+        else if (provider === 'openai') save('openai', { apiKey: oaiKey, enabled: oaiEnabled });
         else if (provider === 'ollama')
           save('ollama', { baseUrl: ollamaUrl, model: ollamaModel, apiKey: 'ollama' });
         else if (provider === 'tts')
           save('tts', { baseUrl: ttsUrl, defaultVoice: ttsVoice, apiKey: 'kokoro' });
-        else if (provider === 'asr')
-          save('asr', { baseUrl: asrUrl, apiKey: 'whisper' });
+        else if (provider === 'asr') save('asr', { baseUrl: asrUrl, apiKey: 'whisper' });
         else if (provider === 'webSearch')
           save('webSearch', {
             tavily: { apiKey: tavilyKey, enabled: !!tavilyKey },
@@ -151,7 +156,11 @@ export default function ProvidersPage() {
           });
       }}
     >
-      {saving === provider ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+      {saving === provider ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : (
+        <Save className="h-3 w-3" />
+      )}
       Save
     </Button>
   );
@@ -167,21 +176,43 @@ export default function ProvidersPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Gemini (Primary Generation)</CardTitle>
-          <CardDescription>Multi-key rotation across GCP projects for maximum free tier</CardDescription>
+          <CardDescription>
+            Multi-key rotation across GCP projects for maximum free tier
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Free tier API keys <span className="text-muted-foreground text-xs">(comma-separated, one per GCP project)</span></Label>
-            <Input placeholder="AIzaSy..., AIzaSy..., AIzaSy..." value={geminiKeys} onChange={(e) => setGeminiKeys(e.target.value)} />
+            <Label>
+              Free tier API keys{' '}
+              <span className="text-muted-foreground text-xs">
+                (comma-separated, one per GCP project)
+              </span>
+            </Label>
+            <Input
+              placeholder="AIzaSy..., AIzaSy..., AIzaSy..."
+              value={geminiKeys}
+              onChange={(e) => setGeminiKeys(e.target.value)}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Paid key (optional, Tier 1)</Label>
-              <Input type="password" placeholder="AIzaSy..." value={geminiPaidKey} onChange={(e) => setGeminiPaidKey(e.target.value)} />
+              <Input
+                type="password"
+                placeholder="AIzaSy..."
+                value={geminiPaidKey}
+                onChange={(e) => setGeminiPaidKey(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label>Monthly cap (£)</Label>
-              <Input type="number" min="0" step="0.5" value={geminiCap} onChange={(e) => setGeminiCap(e.target.value)} />
+              <Input
+                type="number"
+                min="0"
+                step="0.5"
+                value={geminiCap}
+                onChange={(e) => setGeminiCap(e.target.value)}
+              />
             </div>
           </div>
           <SaveBtn provider="gemini" />
@@ -202,7 +233,12 @@ export default function ProvidersPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>API key</Label>
-            <Input type="password" placeholder="sk-..." value={sfKey} onChange={(e) => setSfKey(e.target.value)} />
+            <Input
+              type="password"
+              placeholder="sk-..."
+              value={sfKey}
+              onChange={(e) => setSfKey(e.target.value)}
+            />
           </div>
           <SaveBtn provider="siliconflow" />
         </CardContent>
@@ -222,7 +258,12 @@ export default function ProvidersPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>API key</Label>
-            <Input type="password" placeholder="sk-..." value={oaiKey} onChange={(e) => setOaiKey(e.target.value)} />
+            <Input
+              type="password"
+              placeholder="sk-..."
+              value={oaiKey}
+              onChange={(e) => setOaiKey(e.target.value)}
+            />
           </div>
           <SaveBtn provider="openai" />
         </CardContent>
@@ -232,7 +273,9 @@ export default function ProvidersPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Ollama (Local Runtime)</CardTitle>
-          <CardDescription>Qwen 3.5 on your local server — all runtime chat/grading</CardDescription>
+          <CardDescription>
+            Qwen 3.5 on your local server — all runtime chat/grading
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -247,7 +290,11 @@ export default function ProvidersPage() {
           </div>
           <div className="flex gap-2">
             <SaveBtn provider="ollama" />
-            <Button variant="outline" size="sm" onClick={() => testConnectivity(ollamaUrl, 'Ollama')}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => testConnectivity(ollamaUrl, 'Ollama')}
+            >
               <TestTube2 className="h-3 w-3 mr-1" /> Test
             </Button>
           </div>
@@ -268,12 +315,20 @@ export default function ProvidersPage() {
             </div>
             <div className="space-y-2">
               <Label>Default voice</Label>
-              <Input placeholder="af_bella" value={ttsVoice} onChange={(e) => setTtsVoice(e.target.value)} />
+              <Input
+                placeholder="af_bella"
+                value={ttsVoice}
+                onChange={(e) => setTtsVoice(e.target.value)}
+              />
             </div>
           </div>
           <div className="flex gap-2">
             <SaveBtn provider="tts" />
-            <Button variant="outline" size="sm" onClick={() => testConnectivity(ttsUrl, 'Kokoro TTS')}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => testConnectivity(ttsUrl, 'Kokoro TTS')}
+            >
               <TestTube2 className="h-3 w-3 mr-1" /> Test
             </Button>
           </div>
@@ -293,7 +348,11 @@ export default function ProvidersPage() {
           </div>
           <div className="flex gap-2">
             <SaveBtn provider="asr" />
-            <Button variant="outline" size="sm" onClick={() => testConnectivity(asrUrl, 'Whisper ASR')}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => testConnectivity(asrUrl, 'Whisper ASR')}
+            >
               <TestTube2 className="h-3 w-3 mr-1" /> Test
             </Button>
           </div>
@@ -309,15 +368,33 @@ export default function ProvidersPage() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Tavily API key <span className="text-muted-foreground text-xs">(1,000 free/mo)</span></Label>
-              <Input type="password" placeholder="tvly-..." value={tavilyKey} onChange={(e) => setTavilyKey(e.target.value)} />
+              <Label>
+                Tavily API key{' '}
+                <span className="text-muted-foreground text-xs">(1,000 free/mo)</span>
+              </Label>
+              <Input
+                type="password"
+                placeholder="tvly-..."
+                value={tavilyKey}
+                onChange={(e) => setTavilyKey(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
-              <Label>Brave Search API key <span className="text-muted-foreground text-xs">(2,000 free/mo)</span></Label>
-              <Input type="password" placeholder="BSA..." value={braveKey} onChange={(e) => setBraveKey(e.target.value)} />
+              <Label>
+                Brave Search API key{' '}
+                <span className="text-muted-foreground text-xs">(2,000 free/mo)</span>
+              </Label>
+              <Input
+                type="password"
+                placeholder="BSA..."
+                value={braveKey}
+                onChange={(e) => setBraveKey(e.target.value)}
+              />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">DuckDuckGo is always enabled (unlimited, no key needed)</p>
+          <p className="text-xs text-muted-foreground">
+            DuckDuckGo is always enabled (unlimited, no key needed)
+          </p>
           <SaveBtn provider="webSearch" />
         </CardContent>
       </Card>
@@ -330,8 +407,17 @@ export default function ProvidersPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Parallel scene generation limit</Label>
-            <Input type="number" min="1" max="10" value={concurrency} onChange={(e) => setConcurrency(e.target.value)} className="w-24" />
-            <p className="text-xs text-muted-foreground">Lower = fewer rate limit hits. Higher = faster generation.</p>
+            <Input
+              type="number"
+              min="1"
+              max="10"
+              value={concurrency}
+              onChange={(e) => setConcurrency(e.target.value)}
+              className="w-24"
+            />
+            <p className="text-xs text-muted-foreground">
+              Lower = fewer rate limit hits. Higher = faster generation.
+            </p>
           </div>
           <div className="space-y-2">
             <Label>Fallback chain</Label>

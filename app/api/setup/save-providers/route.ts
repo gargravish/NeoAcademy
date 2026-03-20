@@ -20,7 +20,10 @@ export async function POST(req: NextRequest) {
     const { geminiKeys, ollamaUrl, ttsUrl, asrUrl } = await req.json();
 
     if (!geminiKeys?.length) {
-      return NextResponse.json({ error: 'At least one Gemini API key is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'At least one Gemini API key is required' },
+        { status: 400 },
+      );
     }
 
     const geminiDefault = DEFAULTS.gemini();

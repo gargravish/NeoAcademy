@@ -82,7 +82,9 @@ export async function getPool(): Promise<KeyState[]> {
 
   _pool = states;
   _poolLoadedAt = now;
-  log.info(`Key pool loaded: ${states.filter((s) => !s.isPaid).length} free keys, ${states.some((s) => s.isPaid) ? 1 : 0} paid key`);
+  log.info(
+    `Key pool loaded: ${states.filter((s) => !s.isPaid).length} free keys, ${states.some((s) => s.isPaid) ? 1 : 0} paid key`,
+  );
   return _pool;
 }
 
@@ -178,9 +180,7 @@ async function persistUsage(
   const provider = isPaid ? 'gemini-paid' : 'gemini-free';
 
   // Rough cost: Flash-Lite free = $0, paid = ~$0.075/$0.30 per 1M input/output tokens
-  const costUsd = isPaid
-    ? (tokensIn / 1_000_000) * 0.075 + (tokensOut / 1_000_000) * 0.3
-    : 0;
+  const costUsd = isPaid ? (tokensIn / 1_000_000) * 0.075 + (tokensOut / 1_000_000) * 0.3 : 0;
 
   const existing = await db
     .select()

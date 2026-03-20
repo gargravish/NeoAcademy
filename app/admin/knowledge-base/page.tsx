@@ -45,7 +45,10 @@ function formatBytes(bytes: number) {
 
 function parseTags(raw: string | null): string[] {
   if (!raw) return [];
-  return raw.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+  return raw
+    .split(',')
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 function TagInput({
@@ -98,7 +101,9 @@ function TagInput({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          onBlur={() => { if (input.trim()) addTag(input); }}
+          onBlur={() => {
+            if (input.trim()) addTag(input);
+          }}
           placeholder={tags.length === 0 ? placeholder : ''}
           className="flex-1 min-w-[120px] bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
         />
@@ -139,7 +144,9 @@ export default function AdminKnowledgeBasePage() {
     setLoading(false);
   }
 
-  useEffect(() => { loadDocs(); }, []);
+  useEffect(() => {
+    loadDocs();
+  }, []);
 
   async function uploadFile(file: File) {
     const form = new FormData();
@@ -154,7 +161,9 @@ export default function AdminKnowledgeBasePage() {
         throw new Error(err.error);
       }
       const data = await res.json();
-      toast.success(`${file.name} ingested — ${data.chunkCount} chunks${isGlobal ? ' (global)' : ''}`);
+      toast.success(
+        `${file.name} ingested — ${data.chunkCount} chunks${isGlobal ? ' (global)' : ''}`,
+      );
       await loadDocs();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Upload failed');
@@ -250,7 +259,8 @@ export default function AdminKnowledgeBasePage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Knowledge Base</h1>
         <p className="text-muted-foreground">
-          {docs.length} documents ({globalCount} global) · {totalChunks} chunks · {formatBytes(totalSize)}
+          {docs.length} documents ({globalCount} global) · {totalChunks} chunks ·{' '}
+          {formatBytes(totalSize)}
         </p>
       </div>
 
@@ -266,7 +276,9 @@ export default function AdminKnowledgeBasePage() {
             {...getRootProps()}
             className={cn(
               'flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition-colors',
-              isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50',
+              isDragActive
+                ? 'border-primary bg-primary/5'
+                : 'border-border hover:border-primary/50',
               uploading && 'pointer-events-none opacity-50',
             )}
           >
@@ -362,7 +374,11 @@ export default function AdminKnowledgeBasePage() {
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
             <Database className="h-8 w-8" />
-            <p>{docs.length === 0 ? 'No documents uploaded yet.' : 'No documents match the current filter.'}</p>
+            <p>
+              {docs.length === 0
+                ? 'No documents uploaded yet.'
+                : 'No documents match the current filter.'}
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -382,7 +398,10 @@ export default function AdminKnowledgeBasePage() {
                           {new Date(doc.createdAt).toLocaleDateString()}
                         </p>
                         {doc.isGlobal && (
-                          <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-600">
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] border-blue-300 text-blue-600"
+                          >
                             Global
                           </Badge>
                         )}
@@ -403,7 +422,11 @@ export default function AdminKnowledgeBasePage() {
                     <Badge variant="outline" className="text-xs uppercase">
                       {doc.fileType}
                     </Badge>
-                    <Button variant="ghost" size="sm" onClick={() => deleteDoc(doc.id, doc.filename)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteDoc(doc.id, doc.filename)}
+                    >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>

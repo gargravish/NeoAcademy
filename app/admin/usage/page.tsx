@@ -5,14 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 async function getUsage() {
   // Last 30 days grouped by date + provider
-  return db
-    .select()
-    .from(providerUsage)
-    .orderBy(desc(providerUsage.date))
-    .limit(300);
+  return db.select().from(providerUsage).orderBy(desc(providerUsage.date)).limit(300);
 }
 
-function groupByDate(rows: typeof providerUsage.$inferSelect[]) {
+function groupByDate(rows: (typeof providerUsage.$inferSelect)[]) {
   const byDate: Record<string, typeof rows> = {};
   for (const row of rows) {
     if (!byDate[row.date]) byDate[row.date] = [];
@@ -113,8 +109,13 @@ export default async function UsagePage() {
                       key={r.id}
                       className="flex items-center justify-between pl-4 text-xs text-muted-foreground"
                     >
-                      <span className="capitalize">{r.provider}{r.keyHash ? ` (${r.keyHash})` : ''}</span>
-                      <span className="font-mono">{r.requests} reqs · ${r.costUsd.toFixed(5)}</span>
+                      <span className="capitalize">
+                        {r.provider}
+                        {r.keyHash ? ` (${r.keyHash})` : ''}
+                      </span>
+                      <span className="font-mono">
+                        {r.requests} reqs · ${r.costUsd.toFixed(5)}
+                      </span>
                     </div>
                   ))}
                 </div>

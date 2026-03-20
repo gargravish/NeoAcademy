@@ -27,14 +27,14 @@ const log = createLogger('SmartRouter');
 // ---------------------------------------------------------------------------
 
 export type TaskType =
-  | 'generation-draft'   // Gemini Flash Lite (fast, cheap)
+  | 'generation-draft' // Gemini Flash Lite (fast, cheap)
   | 'generation-quality' // Gemini Flash (higher quality scenes)
-  | 'embedding'          // Gemini embedding-001
-  | 'runtime-chat'       // Ollama local (free, instant)
-  | 'runtime-grade'      // Ollama local (quiz grading)
+  | 'embedding' // Gemini embedding-001
+  | 'runtime-chat' // Ollama local (free, instant)
+  | 'runtime-grade' // Ollama local (quiz grading)
   | 'web-search-summary' // Ollama local (summarise search results)
-  | 'tts'                // Kokoro TTS
-  | 'asr';               // Whisper ASR
+  | 'tts' // Kokoro TTS
+  | 'asr'; // Whisper ASR
 
 export interface KeyInfo {
   keyHash: string;
@@ -52,7 +52,9 @@ export interface RouterResult {
 // Model resolution
 // ---------------------------------------------------------------------------
 
-async function buildGeminiModel(modelId: string): Promise<{ model: LanguageModel; keyInfo: KeyInfo } | null> {
+async function buildGeminiModel(
+  modelId: string,
+): Promise<{ model: LanguageModel; keyInfo: KeyInfo } | null> {
   const keyData = await pickKey();
   if (!keyData) return null;
 
@@ -63,7 +65,9 @@ async function buildGeminiModel(modelId: string): Promise<{ model: LanguageModel
   };
 }
 
-async function buildSiliconFlowModel(modelId: string): Promise<{ model: LanguageModel; keyInfo: KeyInfo } | null> {
+async function buildSiliconFlowModel(
+  modelId: string,
+): Promise<{ model: LanguageModel; keyInfo: KeyInfo } | null> {
   const { getSiliconFlowConfig } = await import('@/lib/db/config');
   const config = await getSiliconFlowConfig();
   if (!config.enabled || !config.apiKey) return null;
@@ -75,7 +79,9 @@ async function buildSiliconFlowModel(modelId: string): Promise<{ model: Language
   };
 }
 
-async function buildOllamaModel(modelId: string): Promise<{ model: LanguageModel; keyInfo: KeyInfo }> {
+async function buildOllamaModel(
+  modelId: string,
+): Promise<{ model: LanguageModel; keyInfo: KeyInfo }> {
   const { getOllamaConfig } = await import('@/lib/db/config');
   const config = await getOllamaConfig();
 
@@ -86,7 +92,9 @@ async function buildOllamaModel(modelId: string): Promise<{ model: LanguageModel
   };
 }
 
-async function buildOpenAIModel(modelId: string): Promise<{ model: LanguageModel; keyInfo: KeyInfo } | null> {
+async function buildOpenAIModel(
+  modelId: string,
+): Promise<{ model: LanguageModel; keyInfo: KeyInfo } | null> {
   const { getOpenAIConfig } = await import('@/lib/db/config');
   const config = await getOpenAIConfig();
   if (!config.enabled || !config.apiKey) return null;
@@ -167,18 +175,16 @@ export const smartRouter = {
         `No available provider for task "${opts.task}". Check API keys in the admin portal.`,
       );
     }
-    log.info(`Router: task=${opts.task} → provider=${result.keyInfo.provider} model=${result.modelId}`);
+    log.info(
+      `Router: task=${opts.task} → provider=${result.keyInfo.provider} model=${result.modelId}`,
+    );
     return result;
   },
 
   /**
    * Call after a successful generation to record usage.
    */
-  async recordUsage(
-    keyInfo: KeyInfo,
-    tokensIn: number,
-    tokensOut: number,
-  ): Promise<void> {
+  async recordUsage(keyInfo: KeyInfo, tokensIn: number, tokensOut: number): Promise<void> {
     if (keyInfo.provider === 'gemini') {
       await recordGeminiUsage(keyInfo.keyHash, tokensIn, tokensOut, keyInfo.isPaid);
     } else {

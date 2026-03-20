@@ -42,13 +42,29 @@ export async function POST(req: NextRequest) {
 
       if (fileType === 'image') {
         const buffer = Buffer.from(await file.arrayBuffer());
-        const result = await ingestDocument({ userId: user.id, filename, fileType: 'image', buffer, mimeType, context, ...ingestMeta });
+        const result = await ingestDocument({
+          userId: user.id,
+          filename,
+          fileType: 'image',
+          buffer,
+          mimeType,
+          context,
+          ...ingestMeta,
+        });
         return NextResponse.json(result);
       }
 
       if (fileType === 'video') {
         const buffer = Buffer.from(await file.arrayBuffer());
-        const result = await ingestDocument({ userId: user.id, filename, fileType: 'video', buffer, mimeType, context, ...ingestMeta });
+        const result = await ingestDocument({
+          userId: user.id,
+          filename,
+          fileType: 'video',
+          buffer,
+          mimeType,
+          context,
+          ...ingestMeta,
+        });
         return NextResponse.json(result);
       }
 
@@ -68,14 +84,23 @@ export async function POST(req: NextRequest) {
 
       // TXT / MD
       const content = await file.text();
-      const result = await ingestDocument({ userId: user.id, filename, fileType, content, ...ingestMeta });
+      const result = await ingestDocument({
+        userId: user.id,
+        filename,
+        fileType,
+        content,
+        ...ingestMeta,
+      });
       return NextResponse.json(result);
     }
 
     if (urlInput) {
       const res = await fetch(urlInput, { signal: AbortSignal.timeout(15000) });
       let content = await res.text();
-      content = content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      content = content
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
       if (!content) return NextResponse.json({ error: 'No content at URL' }, { status: 400 });
 
       const result = await ingestDocument({

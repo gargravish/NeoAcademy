@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth/server';
 import {
-  getGeminiConfig, setGeminiConfig,
-  getSiliconFlowConfig, setSiliconFlowConfig,
-  getOpenAIConfig, setOpenAIConfig,
-  getOllamaConfig, setOllamaConfig,
-  getTTSConfig, setTTSConfig,
-  getASRConfig, setASRConfig,
-  getWebSearchConfig, setWebSearchConfig,
-  getGenerationConfig, setGenerationConfig,
+  getGeminiConfig,
+  setGeminiConfig,
+  getSiliconFlowConfig,
+  setSiliconFlowConfig,
+  getOpenAIConfig,
+  setOpenAIConfig,
+  getOllamaConfig,
+  setOllamaConfig,
+  getTTSConfig,
+  setTTSConfig,
+  getASRConfig,
+  setASRConfig,
+  getWebSearchConfig,
+  setWebSearchConfig,
+  getGenerationConfig,
+  setGenerationConfig,
 } from '@/lib/db/config';
 
 export async function GET() {
@@ -30,7 +38,7 @@ export async function GET() {
   ]);
 
   // Mask API keys in response — only show first 8 chars
-  const mask = (key: string) => key ? key.slice(0, 8) + '••••••••' : '';
+  const mask = (key: string) => (key ? key.slice(0, 8) + '••••••••' : '');
 
   return NextResponse.json({
     gemini: {

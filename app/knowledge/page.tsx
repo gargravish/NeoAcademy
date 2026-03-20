@@ -6,7 +6,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Database, FileText, Globe, Image, Loader2, Plus, Tag, Trash2, Upload, Video, X } from 'lucide-react';
+import {
+  Database,
+  FileText,
+  Globe,
+  Image,
+  Loader2,
+  Plus,
+  Tag,
+  Trash2,
+  Upload,
+  Video,
+  X,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useDropzone } from 'react-dropzone';
 import { cn } from '@/lib/utils';
@@ -30,7 +42,10 @@ function formatBytes(bytes: number) {
 
 function parseTags(raw: string | null): string[] {
   if (!raw) return [];
-  return raw.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+  return raw
+    .split(',')
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 function TagInput({
@@ -85,7 +100,9 @@ function TagInput({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          onBlur={() => { if (input.trim()) addTag(input); }}
+          onBlur={() => {
+            if (input.trim()) addTag(input);
+          }}
           placeholder={tags.length === 0 ? placeholder : ''}
           className="flex-1 min-w-[120px] bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
         />
@@ -123,7 +140,9 @@ export default function KnowledgePage() {
     setLoading(false);
   }
 
-  useEffect(() => { loadDocs(); }, []);
+  useEffect(() => {
+    loadDocs();
+  }, []);
 
   async function uploadFile(file: File) {
     const form = new FormData();
@@ -240,7 +259,9 @@ export default function KnowledgePage() {
               {...getRootProps()}
               className={cn(
                 'flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors',
-                isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50',
+                isDragActive
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/50',
                 uploading && 'pointer-events-none opacity-50',
               )}
             >
@@ -312,7 +333,10 @@ export default function KnowledgePage() {
                             {doc.chunkCount} chunks · {formatBytes(doc.sizeBytes)}
                           </p>
                           {doc.isGlobal && (
-                            <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-600">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] border-blue-300 text-blue-600"
+                            >
                               Global
                             </Badge>
                           )}
@@ -328,7 +352,11 @@ export default function KnowledgePage() {
                       <Badge variant="outline" className="text-xs uppercase">
                         {doc.fileType}
                       </Badge>
-                      <Button variant="ghost" size="sm" onClick={() => deleteDoc(doc.id, doc.filename)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteDoc(doc.id, doc.filename)}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
