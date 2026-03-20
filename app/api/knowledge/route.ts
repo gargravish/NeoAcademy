@@ -53,11 +53,16 @@ export async function POST(req: NextRequest) {
       }
 
       if (fileType === 'pdf') {
-        const { extractText } = await import('unpdf');
-        const arrayBuffer = await file.arrayBuffer();
-        const extracted = await extractText(new Uint8Array(arrayBuffer));
-        const content = Array.isArray(extracted.text) ? extracted.text.join('\n') : (extracted.text as string);
-        const result = await ingestDocument({ userId: user.id, filename, fileType: 'pdf', content, ...ingestMeta });
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const result = await ingestDocument({
+          userId: user.id,
+          filename,
+          fileType: 'pdf',
+          buffer,
+          mimeType,
+          context,
+          ...ingestMeta,
+        });
         return NextResponse.json(result);
       }
 

@@ -63,6 +63,11 @@ export async function ingestDocument(opts: IngestOptions): Promise<IngestResult>
     return ingestVideo(opts);
   }
 
+  if (opts.fileType === 'pdf') {
+    // If we have the raw PDF bytes, we can extract embedded images too.
+    if (opts.buffer) return ingestPdf(opts);
+  }
+
   return ingestText(opts);
 }
 
@@ -115,6 +120,142 @@ async function ingestText(opts: IngestOptions): Promise<IngestResult> {
 
   log.info(`Text ingestion complete: docId=${docId}, ${chunks.length} chunks`);
   return { docId, chunkCount: chunks.length, sizeBytes, fileType: opts.fileType };
+}
+
+// ---------------------------------------------------------------------------
+// PDF ingestion (text + embedded images)
+// ---------------------------------------------------------------------------
+
+async function ingestPdf(opts: IngestOptions): Promise<IngestResult> {
+  if (!opts.buffer) throw new Error('PDF buffer required');
+
+  const context = opts.context;
+  const tags = opts.tags ?? [];
+  const isGlobal = opts.isGlobal ?? false;
+
+  const MAX_PDF_IMAGE_DESCRIPTIONS = Number(process.env.MAX_PDF_IMAGE_DESCRIPTIONS ?? 8);
+
+  log.info(`  → Parsing PDF text + images (up to ${MAX_PDF_IMAGE_DESCRIPTIONS} images will be described)`);
+
+  let parsed: Awaited<ReturnType<typeof import('@/lib/pdf/pdf-providers').parsePDF>>;
+  try {
+    const { parsePDF } = await import('@/lib/pdf/pdf-providers');
+    parsed = await parsePDF({ providerId: 'unpdf' }, opts.buffer);
+  } catch (err) {
+    log.warn(`  → parsePDF failed for ${opts.filename}, falling back to text-only ingestion`, err);
+
+    // Best-effort fallback: extract text via unpdf directly.
+    const { getDocumentProxy, extractText } = await import('unpdf');
+    const pdf = await getDocumentProxy(new Uint8Array(opts.buffer));
+    const { text } = await extractText(pdf, { mergePages: true });
+    return ingestText({ ...opts, content: Array.isArray(text) ? text.join('\n') : (text as string) });
+  }
+
+  const pdfText = parsed.text ?? '';
+  const pdfImagesMeta = parsed.metadata?.pdfImages;
+  const images =
+    Array.isArray(pdfImagesMeta) && pdfImagesMeta.length > 0
+      ? pdfImagesMeta.map((m) => ({ src: m.src, pageNumber: m.pageNumber ?? 0 }))
+      : parsed.images.map((src, i) => ({ src, pageNumber: i })); // fallback ordering
+
+  const imagesToDescribe = images.slice(0, Math.max(0, MAX_PDF_IMAGE_DESCRIPTIONS));
+  log.info(`  → Extracted ${images.length} images from PDF, describing ${imagesToDescribe.length}`);
+
+  const docId = nanoid();
+  const allTexts: string[] = [];
+  const allMetas: Record<string, unknown>[] = [];
+
+  let nextChunkIndex = 0;
+  if (pdfText.trim()) {
+    const textChunks = chunkText(pdfText);
+    log.info(`  → ${textChunks.length} text chunks`);
+
+    for (const c of textChunks) {
+      allTexts.push(c.text);
+      allMetas.push({
+        filename: opts.filename,
+        fileType: 'pdf',
+        chunkIndex: nextChunkIndex++,
+        ...(tags.length > 0 && { tags }),
+        ...(isGlobal && { isGlobal: true }),
+      });
+    }
+  }
+
+  // Describe each embedded PDF image and embed its description.
+  for (const img of imagesToDescribe) {
+    const dataUrl = img.src;
+    const match = /^data:(.*?);base64,(.*)$/.exec(dataUrl);
+    const mimeType = match?.[1] ?? 'image/png';
+    const base64 = match?.[2] ?? '';
+    if (!base64) continue;
+
+    try {
+      const imageData = new Uint8Array(Buffer.from(base64, 'base64'));
+      log.info(`  → Describing PDF image (page ${img.pageNumber})…`);
+      const description = await describeImage(imageData, mimeType, context);
+
+      const fullText = `[PDF Image: ${opts.filename}]\n[Page: ${img.pageNumber}]\n${description}`;
+      const chunks = chunkText(fullText, { chunkSize: 400, overlap: 40 });
+
+      for (const c of chunks) {
+        allTexts.push(c.text);
+        allMetas.push({
+          filename: opts.filename,
+          fileType: 'image',
+          chunkIndex: nextChunkIndex++,
+          isMedia: true,
+          mediaType: 'image',
+          pageNumber: img.pageNumber,
+          ...(tags.length > 0 && { tags }),
+          ...(isGlobal && { isGlobal: true }),
+        });
+      }
+    } catch (err) {
+      log.warn(`  → Failed to describe a PDF image (page ${img.pageNumber})`, err);
+    }
+  }
+
+  if (allTexts.length === 0) {
+    throw new Error(`No content extracted from PDF ${opts.filename}`);
+  }
+
+  log.info(`  → Embedding ${allTexts.length} chunks total (text + image descriptions)…`);
+
+  const allVectors: number[][] = [];
+  const BATCH_SIZE = 50;
+  for (let i = 0; i < allTexts.length; i += BATCH_SIZE) {
+    const batch = allTexts.slice(i, i + BATCH_SIZE);
+    const vectors = await embedTexts(batch);
+    allVectors.push(...vectors);
+    log.info(`  → Embedded batch ${Math.ceil((i + 1) / BATCH_SIZE)}/${Math.ceil(allTexts.length / BATCH_SIZE)}`);
+  }
+
+  await insertChunks(
+    allMetas.map((metadata, i) => ({
+      id: `${docId}_${i}`,
+      docId,
+      userId: opts.userId,
+      text: allTexts[i],
+      vector: allVectors[i] ?? new Array(768).fill(0),
+      metadata,
+    })),
+  );
+
+  const sizeBytes = opts.buffer.length;
+  await saveKnowledgeDoc({
+    id: docId,
+    userId: opts.userId,
+    filename: opts.filename,
+    fileType: 'pdf',
+    chunkCount: allTexts.length,
+    sizeBytes,
+    tags,
+    isGlobal,
+  });
+
+  log.info(`PDF ingestion complete: docId=${docId}, ${allTexts.length} chunks`);
+  return { docId, chunkCount: allTexts.length, sizeBytes, fileType: 'pdf' };
 }
 
 // ---------------------------------------------------------------------------
