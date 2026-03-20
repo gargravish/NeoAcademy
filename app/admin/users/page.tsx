@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -20,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, UserCog } from 'lucide-react';
+import { KeyRound, Loader2, Plus, Trash2, UserCog } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface User {
@@ -40,6 +41,11 @@ export default function UsersPage() {
   const [addPassword, setAddPassword] = useState('');
   const [addRole, setAddRole] = useState('learner');
   const [adding, setAdding] = useState(false);
+
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetting, setResetting] = useState(false);
 
   async function load() {
     const res = await fetch('/api/admin/users');
@@ -82,6 +88,55 @@ export default function UsersPage() {
       toast.error('Failed to create user');
     } finally {
       setAdding(false);
+    }
+  }
+
+  async function deleteUser(userId: string) {
+    if (!confirm('Delete this user permanently? This will remove their sessions and account credentials.')) return;
+    const res = await fetch('/api/admin/users', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (res.ok) {
+      toast.success('User deleted');
+      await load();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      toast.error(err.error ?? 'Failed to delete user');
+    }
+  }
+
+  function openReset(userId: string) {
+    setResetUserId(userId);
+    setResetPassword('');
+    setResetOpen(true);
+  }
+
+  async function submitReset(e: React.FormEvent) {
+    e.preventDefault();
+    if (!resetUserId) return;
+    setResetting(true);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: resetUserId, newPassword: resetPassword }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? 'Failed to reset password');
+      }
+      toast.success('Password reset');
+      setResetOpen(false);
+      setResetUserId(null);
+      setResetPassword('');
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to reset password');
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -132,6 +187,36 @@ export default function UsersPage() {
         </Dialog>
       </div>
 
+      {/* Reset password dialog */}
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset password</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={submitReset} className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>New password</Label>
+              <Input
+                type="password"
+                value={resetPassword}
+                onChange={(e) => setResetPassword(e.target.value)}
+                required
+                minLength={8}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" disabled={resetting} onClick={() => setResetOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={resetting}>
+                {resetting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <KeyRound className="h-4 w-4 mr-2" />}
+                Reset password
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-sm text-muted-foreground">{users.length} users</CardTitle>
@@ -166,6 +251,18 @@ export default function UsersPage() {
                       <SelectItem value="admin">Set as Admin</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {/* Reset password */}
+                  <Button variant="outline" size="sm" onClick={() => openReset(u.id)}>
+                    <KeyRound className="h-4 w-4 mr-1" />
+                    Reset
+                  </Button>
+
+                  {/* Delete user */}
+                  <Button variant="destructive" size="sm" onClick={() => deleteUser(u.id)}>
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
                 </div>
               </div>
             ))
