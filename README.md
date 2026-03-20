@@ -394,7 +394,7 @@ Upload any of these to enrich course generation with your own materials:
 
 | Type | Extensions | How it works |
 |------|-----------|--------------|
-| **PDF** | `.pdf` | Text extracted via unpdf, chunked and embedded |
+| **PDF** | `.pdf` | Extracts text via unpdf, and also extracts embedded page images (described via Gemini Vision) → chunked and embedded |
 | **Text** | `.txt` | Chunked and embedded |
 | **Markdown** | `.md` | Section-aware chunking, embedded |
 | **URL** | — | Page fetched, HTML stripped, embedded |
